@@ -63,6 +63,9 @@ function sereneBells(playingStyle) {
         eventcounter = 0;
     }
 
+    var charging_in_out=false;
+    var charging_next_event=0;
+    var charging_seconds=8;
     // Animation and sound generation
     function animate() {
         var tuning = playingStyle.toLowerCase();
@@ -219,21 +222,24 @@ function sereneBells(playingStyle) {
 			      }
 			     break;
 			    case 4:
-			      //we just started, do a gong at one second..
-			      if(dt%16000<25) // I breath about once every 32 seconds slow, so..
-			      {
-			        eventcounter=5;
-    		      console.log("eventcounter: "+eventcounter+" "+dt);
+			      // init charging at 8 seconds.
+			      charging_seconds=8;
+              charging_next_event=Date.now()+charging_seconds*1000;
 			       createTone(false);
-			      }
+			        eventcounter=5;
 			     break;
 			    case 5:
 			      //we just started, do a gong at one second..
-			      if(dt%16000<25) // I breath about once every 32 seconds slow, so..
+			      if(Date.now()>charging_next_event) // I breath about once every 32 seconds slow, so 16 in 16 out is comfortable...
 			      {
-			        eventcounter=4;
+			        charging_seconds+=0.2;
+			        if(charging_seconds>18)charging_seconds=18; // 18 is the holy number.
+              charging_next_event=Date.now()+charging_seconds*1000;
+              if(charging_in_out)charging_in_out=false;
+              else charging_in_out=true;
+			        eventcounter=5;
     		      console.log("eventcounter: "+eventcounter+" "+dt);
-			       createTone(false);
+	  		       createTone(false);
 			      }
 			     break;
 			  }
@@ -343,9 +349,9 @@ var tuning = playingStyle.toLowerCase();
 	}
 	if(tuning=="charging")
 	{
-			n=8;
-			if(eventcounter==4) n=7;
-			if(eventcounter==5) n=14;
+			if(charging_in_out) n=14;
+			else n=12;
+	  console.log("chargine, note is: "+n);
 	}
 	if(tuning=="complete") last_note=n;
 	
@@ -385,11 +391,12 @@ var tuning = playingStyle.toLowerCase();
   	{
   	  if(eventcounter<4)
   	  {
-  	    decay=2000+eventcounter*3000;
+  	    decay=1000+eventcounter*1000;
   	    console.log("waking up the gong");
   	  }else
   	  {
-  	    decay=30000;
+  	    console.log("gong is awake");
+  	    decay=20000;
   	  }
   	}
 
@@ -420,7 +427,7 @@ var tuning = playingStyle.toLowerCase();
   	  }
   	  if(eventcounter==5)
   	  {
-  	    voldim=3000;
+  	    voldim=1.5;
   	  }
   	}
 
@@ -444,7 +451,7 @@ var tuning = playingStyle.toLowerCase();
   
   
    // Dispatch a custom event when a bell is fired
-    var bellEvent = new CustomEvent('bellFired', { detail: { special: special, freq: freq, warble: Math.abs(freq2-freq1) } });
+    var bellEvent = new CustomEvent('bellFired', { detail: { tuning: tuning, in_out: charging_in_out, special: special, freq: freq, warble: Math.abs(freq2-freq1) } });
     document.dispatchEvent(bellEvent);
 
   }

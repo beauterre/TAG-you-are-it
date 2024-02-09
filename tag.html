@@ -200,7 +200,7 @@
                 var b= (128 + 128 * Math.sin(frame * 53)+point1.b)/3;
                 ctx.strokeStyle = "rgb(" + r+ "," + g + "," + b + ")";
                 ctx.stroke();
-                if( Math.random()<0.2)
+                if(1)// Math.random()<0.5)
                 {
                   backctx.save();
                   backctx.globalCompositeOperation = "erase";
@@ -232,7 +232,7 @@
 function doBackGround(x,y,r,g,b)
 {
    //console.log('doBackground function called');
-      var string=["ABCDEFGHIJKLMNOPQRSTUVWXYZ234567890abcedfghijklmnopqrstuvwxyz","ABCDEFGHIJKLMNOPQRSTUVWXYZ234567890abcedfghijklmnopqrstuvwxyz@","abcABCDEFGHIJKL"];
+      var string=["ABCDEFGHIJKLMNOPQRSTUVWXYZ234567890abcedfghijklmnopqrstuvwxyz","ABCDEFGHIJKLMNOPQRSTUVWXYZ234567890abcedfghijklmnopqrstuvwxyz@","ACGIJKL"];
     var operations=["lighter","multiply","screen","overlay","darken","lighten","color-dodge","color-burn","hard-light","soft-light","difference","exclusion","hue","saturation","color","luminosity"];
     if(time>100)
   operations=["multiply","screen","overlay","hard-light","soft-light"];
@@ -250,7 +250,7 @@ function doBackGround(x,y,r,g,b)
               if(time<100)
                 backctx.globalAlpha=0.01;
               else
-                backctx.globalAlpha=0.04;
+                backctx.globalAlpha=0.3;
               backctx.fillStyle="rgb("+r+","+g+","+b+")";
               backctx.font=s+'px font'+font;
               backctx.globalCompositeOperation=operations[Math.floor(4+i+t)%operations.length];
@@ -262,17 +262,14 @@ function doBackGround(x,y,r,g,b)
 
               backctx.save();
 
-                // fuzz
-                backctx.globalAlpha=0.1;
-                backctx.drawImage(background,-1+Math.random()*2,-1+Math.random()*2);
                 
                 // increase contrast.
-                if(time>100 && time%8<6)
+                if(time>100 && time%20<2)
                 {
                   backctx.globalCompositeOperation="screen";
                   backctx.drawImage(background,0,0);
                 }
-                if(time>100 && time%7<5)
+                if(time>100 && time%20<2)
                 {
                   backctx.globalCompositeOperation="multiply";
                   backctx.drawImage(background,0,0);
@@ -287,6 +284,13 @@ function doBackGround(x,y,r,g,b)
     
         // Animation loop
         function animate() {
+          
+                          // blur the background
+          backctx.save();
+          backctx.globalAlpha=0.1;
+          backctx.drawImage(background,-1+Math.random()*2,-1+Math.random()*2);
+          backctx.restore();
+
           var dt=Date.now()-start;
           ctx.save();
           ctx.globalCompositeOperation="screen";
@@ -349,7 +353,6 @@ function doBackGround(x,y,r,g,b)
                   backctx.stroke();
                 
               }
-              
               p.life--;
               if(p.life<0) particles.splice(i,1);
             }
@@ -452,7 +455,9 @@ function doBackGround(x,y,r,g,b)
         }
         
         var particles=[];
+        var start_counting=false;
         document.addEventListener('bellFired', fireBell);
+        var last_bell=-1, charging_dt=0;
         function fireBell(event)
         {
           // Handle the event here
@@ -471,6 +476,65 @@ function doBackGround(x,y,r,g,b)
           p.alpha=1;
           p.dr=2+Math.random();
           p.warble=event.detail.warble;
+          
+          if(event.detail.tuning=="charging")
+          {
+            p.tuning="charging";
+            if(last_bell==-1)
+            {
+              last_bell=Date.now();
+            }else
+            {
+              charging_dt=Date.now()-last_bell;
+              console.log("charging: "+charging_dt+" sec");
+              last_bell=Date.now();
+              
+              if(start_counting)
+              {
+                    backctx.font = "40px Arial"; // Example font size and family
+  
+                    backctx.globalAlpha=1;
+                    backctx.fillStyle="#000";
+                    backctx.fillRect(0,30,620,60);
+  //                  backctx.strokeStyle="#f00";
+//                    backctx.strokeRect(0,30,520,70);
+                    backctx.fillStyle="#fff";
+                    var in_out="😊 breathe IN for";
+                    if(event.detail.in_out)
+                    {
+                      if(charging_dt>11000)
+                      {
+                        backctx.fillStyle="#640";
+                        backctx.fillRect(0,30,620,130);
+                                      ctx.save();
+                        ctx.shadowColor = 'rgba(0, 0, 0, 1)'; // Shadow color
+                        ctx.shadowOffsetX = 0; // Horizontal offset of the shadow
+                        ctx.shadowOffsetY = 0; // Vertical offset of the shadow
+                        ctx.shadowBlur = 5; // Blur radius of the shadow
+                        backctx.fillStyle="#f90";
+                        backctx.fillText("ॐ प्राणाय नमः (Oṃ prāṇāya namaḥ)", 20, 140);
+                        backctx.restore();
+                        
+                      };
+                      in_out="😮 breathe OUT for";
+                    }
+                    backctx.fillText(in_out+" "+(Math.floor(charging_dt/100)/10)+" seconds",20,70);
+              }
+              
+            }
+            console.log("charging detected"+console.log(event.detail));
+            if(event.detail.in_out)
+            {
+              console.log("in");
+              p.radius=510;
+              p.dr=-2;
+              start_counting=true;
+              
+            }else
+            {
+              console.log("out");
+            }
+          }
           particles.push(p);
           
           doBackGround(p.x,p.y,p.r,p.g,p.b);
@@ -539,12 +603,12 @@ function doBackGround(x,y,r,g,b)
 
 
         
-        sereneBells("calm");
+        sereneBells("charging");
         
         document.removeEventListener('click', startAnimation);
       }
       
-                  var string=["ABCDEFGHIJKLMNOPQRSTUVWXYZ234567890abcedfghijklmnopqrstuvwxyz","ABCDEFGHIJKLMNOPQRSTUVWXYZ234567890abcedfghijklmnopqrstuvwxyz@","abcABCEFGHIJKL"];
+      var string=["ABCDEFGHIJKLMNOPQRSTUVWXYZ234567890abcedfghijklmnopqrstuvwxyz","ABCDEFGHIJKLMNOPQRSTUVWXYZ234567890abcedfghijklmnopqrstuvwxyz@","ACGIJKL"];
   
 
  for(var i=0;i<string.length;i++)
