@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Random Images Test</title>
+</head>
+<body>
+  <h1>Random Images Test</h1>
+  
+  <div id="images-container"></div>
+
+  <script>
+    // Function to create an image element with a random src
+    function createRandomImage() {
+      const imageUrl = `https://picsum.photos/1920/1080?random=${Math.random()}`;
+      const image = document.createElement('img');
+      image.src = imageUrl;
+      image.alt = 'Random Image';
+      return image;
+    }
+
+    // Function to load multiple random images
+    function loadRandomImages(numImages) {
+      const imagesContainer = document.getElementById('images-container');
+      for (let i = 0; i < numImages; i++) {
+        const randomImage = createRandomImage();
+        imagesContainer.appendChild(randomImage);
+      }
+    }
+
+    // Load three random images when the page loads
+    window.onload = function() {
+      loadRandomImages(3);
+    };
+  </script>
+</body>
+</html>

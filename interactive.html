@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Interactive Canvas</title>
+  <style>
+    canvas {
+      border: 1px solid black;
+      margin: 10px;
+    }
+  </style>
+</head>
+<body>
+  <script>
+  
+    window.onload = function() {
+      var canvas =  document.createElement('canvas');
+      canvas.width = 1920;
+      canvas.height = 1080;
+      var brush={x:0,y:0};
+      document.body.appendChild(canvas);
+  
+    // write message on first canvas.
+        var ctx = canvas.getContext('2d');
+  
+                // Set text properties
+        ctx.fillStyle = 'black';
+        ctx.font = '40px Arial';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        
+        // Calculate the center position
+        var centerX = canvas.width / 2;
+        var centerY = canvas.height / 2;
+        
+        // Get current date and time
+        var currentDate = new Date();
+        currentDate.setHours(currentDate.getHours() + 1); // Adjusting for an hour later
+        var formattedDate = currentDate.toISOString().slice(0, 16).replace('T', ' ');
+        var stopped=false;
+        // Text to be displayed
+        var text = "20 minutes AudioVisual Meditation, no voice, Serene Bells " + formattedDate;
+        
+        ctx.fillStyle="#fA8";
+        // Draw text in the center
+        ctx.fillText(text, centerX, centerY);
+
+        canvas.addEventListener('click',start);
+        function start(event)
+        {
+            canvas.removeEventListener('click',start);
+          canvas.addEventListener('click',stop);
+
+            var rect = event.target.getBoundingClientRect();
+            //ctx.clearRect(0,0,1920,1080);
+            canvas.addEventListener('mousemove',handlePointer);
+            brush.x = (event.clientX - rect.left)*1920/rect.width;
+            brush.y = (event.clientY - rect.top)*1080/rect.height;
+            brush.tx = (event.clientX - rect.left)*1920/rect.width;
+            brush.ty = (event.clientY - rect.top)*1080/rect.height;
+            animate();
+          
+        }
+        function handlePointer(event)
+        {
+          var rect = event.target.getBoundingClientRect();
+          brush.tx = (event.clientX - rect.left)*1920/rect.width;
+          brush.ty = (event.clientY - rect.top)*1080/rect.height;
+        }
+        function stop()
+        {
+          stopped=true;
+        }
+        
+        var frame=0;
+        function animate()
+        {
+          if(stopped==false)
+          {
+              frame++;
+              // clear to prev state
+              ctx.drawImage(animbuffer[frame%animbuffer.length],0,0);
+              var dx=brush.tx-brush.x;
+              var dy=brush.ty-brush.y;
+              var len=Math.sqrt(dx*dx+dy*dy);
+              if(len>5)
+              {
+                  brush.x+=dx/len*5;
+                  brush.y+=dy/len*5;
+    
+                  ctx.beginPath();
+                  ctx.arc(brush.x, brush.y, 50, 0, 2 * Math.PI);
+                  var r = Math.sin(frame / 5.1) * 128 + 128;
+                  var g = Math.sin(frame / 4.3) * 128 + 128;
+                  var b = Math.sin(frame / 3.9) * 128 + 128;
+                  ctx.fillStyle = 'rgba(' + r + ',' + g + ',' + b + ',0.1)';
+                  ctx.fill();
+              }
+              
+              for(i=0;i<animbuffer.length;i++)
+              {
+                var ctx_a=animbuffer[i].getContext("2d");
+                // Draw dot on main canvas with gradient effect
+                var gradient = ctx_a.createRadialGradient(brush.x, brush.y, 0, brush.x, brush.y, 50);
+                var r = Math.sin(frame / 5.1-i/25*Math.PI) * 128 + 128;
+                var g = Math.sin(frame / 4.3-i/25*Math.PI) * 128 + 128;
+                var b = Math.sin(frame / 3.9-i/25*Math.PI) * 128 + 128;
+    
+                  ctx_a.beginPath();
+                  ctx_a.arc(brush.x, brush.y, 50, 0, 2 * Math.PI);
+                  ctx_a.fillStyle = 'rgba(' + r + ',' + g + ',' + b + ',0.1)';
+                  ctx_a.fill();
+              }
+          }
+          else
+          {
+              frame--;
+              // clear to prev state
+              if(frame<0) frame=animbuffer.length;
+              ctx.drawImage(animbuffer[frame%animbuffer.length],0,0);
+          }
+          window.requestAnimationFrame(animate);
+        }
+
+
+
+  
+      var animbuffer = [];
+
+      // Create 51 canvases
+      for (var i = 0; i < 50; i++)
+      {
+        var c = document.createElement('canvas');
+        c.width = 1920;
+        c.height = 1080;
+        document.body.appendChild(c);
+        animbuffer.push(c);
+      }
+      
+
+      
+    };
+  </script>
+</body>
+</html>

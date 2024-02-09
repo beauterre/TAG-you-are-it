@@ -1,0 +1,357 @@
+<!doctype HTML>
+<html>
+<head>
+    <style>
+        body {
+            font-family: sans-serif;
+        }
+    </style>
+    <title>1000-Point Sculpture</title>
+    <script src="serene-bells-main/serene-bells.js"></script>
+</head>
+<body>
+ <button id="fullscreen">fullscreen</button>
+ <h1>1000-Point Sculpture - Simple Lines</h1>
+    <canvas id="canvas" width="1920" height="1080" style="border: 1px solid #f00; height: 100%;"></canvas>
+    <script>
+    
+        var randomSeed=17;
+        var randomMult=Math.floor(166452+1664521*Math.random());
+        console.log("random mult= "+randomMult)
+        function pseudoRandom() {
+        randomSeed = (randomSeed * randomMult + 1013904223) % 0xFFFFFFF;
+        return (randomSeed) / 0xFFFFFFF;
+        }
+        var frame = pseudoRandom() * 1000;
+        var time=0;
+
+
+        var magic_numbers=[];
+        for(var i=0;i<100;i++) magic_numbers.push(pseudoRandom());
+
+        var canvas = document.getElementById('canvas');
+        var ctx = canvas.getContext('2d');
+        ctx.fillRect(0,0,canvas.width,canvas.height);
+
+                // Set text properties
+        ctx.fillStyle = 'white';
+        ctx.font = '40px Arial';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        
+        // Calculate the center position
+        var centerX = canvas.width / 2;
+        var centerY = canvas.height / 2;
+        
+        // Get current date and time
+        var currentDate = new Date();
+        currentDate.setHours(currentDate.getHours() + 1); // Adjusting for an hour later
+        var formattedDate = currentDate.toISOString().slice(0, 16).replace('T', ' ');
+        
+        // Text to be displayed
+        var text = "20 minutes Guided Meditation at " + formattedDate;
+        
+        ctx.fillStyle="#fA8";
+        // Draw text in the center
+        ctx.fillText(text, centerX, centerY);
+
+
+        // Function to generate a 1000-point cloud within the range of x and y values from -1 to 1
+        function generatePointCloud(numPoints,seed) {
+            var pointCloud = [];
+            var p = [];
+            for(var i=0;i<20;i++)
+            p.push({ a: Math.sin(seed-frame *magic_numbers[0+i*2]), b: Math.sin(seed+frame *magic_numbers[1+i*2]) });
+                
+            var minx = 1, maxx = -1, miny = 1, maxy = -1, minr = 1, maxr = -1, ming = 1, maxg = -1, minb = 1, maxb = -1;
+
+            var brush = { x: 0, y: 0, r: 0, g: 0, b: 0 };
+            //randomSeed=3;
+            for (var t = 0; t < numPoints + 1000; t++)
+            {
+
+                var i = Math.floor(pseudoRandom()*3)*5;
+                brush.x = brush.x * p[i    ].a + p[i    ].b;
+                brush.y = brush.y * p[i + 1].a + p[i + 1].b;
+                brush.r = brush.r * p[i + 2].a + p[i + 2].b;
+                brush.g = brush.g * p[i + 3].a + p[i + 3].b;
+                brush.b = brush.b * p[i + 4].a + p[i + 4].b;
+
+                minx = Math.min(minx, brush.x);
+                maxx = Math.max(maxx, brush.x);
+                miny = Math.min(miny, brush.y);
+                maxy = Math.max(maxy, brush.y);
+                minr = Math.min(minr, brush.r);
+                maxr = Math.max(maxr, brush.r);
+                ming = Math.min(ming, brush.g);
+                maxg = Math.max(maxg, brush.g);
+                minb = Math.min(minb, brush.b);
+                maxb = Math.max(maxb, brush.b);
+
+                if (t > 1000)
+                    pointCloud.push({ x: brush.x, y: brush.y, r: brush.r, g: brush.g, b: brush.b });
+            }
+
+            // Normalize points to the  right range [-1, 1], color 0-255
+            var rangeX = maxx - minx;
+            var rangeY = maxy - miny;
+            var rangeR = maxr - minr;
+            var rangeG = maxg - ming;
+            var rangeB = maxb - minb;
+            for (var i = 0; i < pointCloud.length; i++) {
+                pointCloud[i].x = ((pointCloud[i].x - minx) / rangeX) * 2 - 1;
+                pointCloud[i].y = ((pointCloud[i].y - miny) / rangeY) * 2 - 1;
+                pointCloud[i].r = Math.floor(((pointCloud[i].r - minr) / rangeR) * 256);
+                pointCloud[i].g = Math.floor(((pointCloud[i].g - ming) / rangeG) * 256);
+                pointCloud[i].b = Math.floor(((pointCloud[i].b - minb) / rangeB) * 256);
+            }
+
+            return pointCloud;
+        }
+
+        // Function to render the point cloud
+      // Function to render the point cloud
+    function renderPointCloud(pointCloud) {
+        ctx.globalAlpha = 0.85;
+    
+        for (var i = 0; i < pointCloud.length; i++) {
+            var point1 = pointCloud[i];
+            var nearestPoint = null;
+            var minDist = Infinity;
+    
+    
+    
+            for (var j = 0; j < pointCloud.length; j++) {
+                if (i !== j) {
+                    var point2 = pointCloud[j];
+                    var dx = point1.x - point2.x;
+                    var dy = point1.y - point2.y;
+
+                    var len = Math.sqrt(dx * dx + dy * dy);
+    
+                    if (len < minDist) {
+                        nearestPoint = point2;
+                        minDist = len;
+                    }
+                }
+            }
+    
+            if (nearestPoint) {
+                var x1 = (point1.x + 1) * canvas.width / 2;
+                var y1 = (point1.y + 1) * canvas.height / 2;
+                var x2 = (nearestPoint.x + 1) * canvas.width / 2;
+                var y2 = (nearestPoint.y + 1) * canvas.height / 2;
+
+                    ctx.fillStyle="rgb("+point1.r+","+point1.g+","+point1.b+")";
+                    ctx.fillRect(x1,y1,3,3);
+    
+                ctx.beginPath();
+                ctx.moveTo(x1, y1);
+                ctx.lineTo(x2, y2);
+                var r= (128 + 128 * Math.sin(frame * 51)+point1.r)/3;
+                var g= (128 + 128 * Math.sin(frame * 57)+point1.g)/3;
+                var b= (128 + 128 * Math.sin(frame * 53)+point1.b)/3;
+                ctx.strokeStyle = "rgb(" + r+ "," + g + "," + b + ")";
+                ctx.stroke();
+              }
+        }
+    
+        ctx.globalAlpha = 1;
+    }
+
+      var pointCloud;
+        // Animation loop
+        function animate() {
+          var dt=Date.now()-start;
+          time++;
+          frame += 0.0005; // Adjust the frame increment as needed
+          var nr=Math.sin(5+frame/10);
+          if(nr<150) nr=150;
+            pointCloud = generatePointCloud(400,1);
+          
+            if(time%10==0)
+            {
+              ctx.fillStyle="rgba(0,0,0,0.1)";
+              ctx.fillRect(0,0,1920,1080);
+            }
+            renderPointCloud(pointCloud);
+            
+            // now render Particles.
+            for(var i=particles.length-1;i>=0;i--)
+            {
+              var p=particles[i];
+//p.x=(pointCloud[p.sister].x+ 1) * canvas.width / 2;
+//              p.y=(pointCloud[p.sister].y + 1) * canvas.height / 2;
+  
+              var sec=(Date.now()/1000);
+              var variatie=p.dr*0.9;
+              if(variatie<2) variatie=2;
+              p.radius += p.dr + variatie* Math.sin( sec* p.warble *Math.PI*2 );
+              if(p.radius<10)p.radius=10;
+    
+              var dt=Date.now()-p.start;
+              p.dr*=0.995;
+              p.alpha-=0.001;
+              if(p.alpha<0.01)p.alpha=0.01;
+  
+              ctx.strokeStyle="rgba("+p.r+","+p.g+","+p.b+","+p.alpha+")";
+              ctx.beginPath();
+              ctx.arc(p.x,p.y,p.radius,0,Math.PI*2);
+              ctx.stroke();
+              
+              p.life--;
+              if(p.life<0) particles.splice(i,1);
+            }
+    
+          if(dt<20*60*1000)
+          {
+            if(time<250)
+            {
+                        // Set text properties
+              ctx.fillStyle = 'white';
+              ctx.font = '40px Arial';
+              ctx.textAlign = 'center';
+              ctx.textBaseline = 'middle';
+              
+              // Calculate the center position
+              var centerX = canvas.width / 2;
+              var centerY = canvas.height / 2;
+              
+              // Get current date and time
+              var currentDate = new Date();
+              currentDate.setHours(currentDate.getHours() + 1); // Adjusting for an hour later
+              var formattedDate = currentDate.toISOString().slice(0, 16).replace('T', ' ');
+              
+              
+                ctx.fillStyle="#ff9";
+
+              // Text to be displayed
+              var text = "20 minutes Guided Meditation at " + formattedDate;
+              
+              // Draw text in the center
+              ctx.fillText(text, centerX, centerY);
+              var text = "TAG., you´re it! Thankful, Attentive, Gentle..";
+
+              if(time>25)
+              {
+              // Draw text in the center
+              // Set up shadow properties
+              ctx.save();
+              ctx.shadowColor = 'rgba(0, 0, 0, 0.9)'; // Shadow color
+              ctx.shadowOffsetX = 5; // Horizontal offset of the shadow
+              ctx.shadowOffsetY = 5; // Vertical offset of the shadow
+              ctx.shadowBlur = 5; // Blur radius of the shadow
+              
+              ctx.fillText(text, centerX, centerY+60);
+              ctx.restore();
+              }
+              if(time>75)
+              {
+              var text = "Breath in a smile, out a sigh of relief...";
+              // Draw text in the center
+              ctx.save();
+              ctx.shadowColor = 'rgba(0, 0, 0, 0.9)'; // Shadow color
+              ctx.shadowOffsetX = 5; // Horizontal offset of the shadow
+              ctx.shadowOffsetY = 5; // Vertical offset of the shadow
+              ctx.shadowBlur = 5; // Blur radius of the shadow
+              ctx.fillText(text, centerX, centerY+160);
+              ctx.restore();
+              }
+            }
+          }else
+          {
+            // the end..
+
+            if(time%10==0)
+            {
+              ctx.fillStyle="rgba(0,0,0,0.1)";
+              ctx.fillRect(0,0,1920,1080);
+            }
+            
+                                    // Set text properties
+              ctx.fillStyle = 'white';
+              ctx.font = '40px Arial';
+              ctx.textAlign = 'center';
+              ctx.textBaseline = 'middle';
+              
+              // Calculate the center position
+              var centerX = canvas.width / 2;
+              var centerY = canvas.height / 2;
+              
+                ctx.fillStyle="#ff9";
+
+              // Text to be displayed
+              var text = "Thank you for joining in.. ";
+              
+              // Draw text in the center
+              ctx.fillText(text, centerX, centerY);
+
+          }
+            //console.log(time);
+              requestAnimationFrame(animate);
+        }
+        
+        var particles=[];
+        document.addEventListener('bellFired', fireBell);
+        function fireBell(event)
+        {
+          // Handle the event here
+          var p={};
+          var r=Math.floor(Math.random()*pointCloud.length);
+          p.sister=r; // well that doesn´t work.. He´s at a differnt position at times.. Entwined??
+          p.x=(pointCloud[r].x+ 1) * canvas.width / 2;
+          p.y=(pointCloud[r].y + 1) * canvas.height / 2;
+          p.r=pointCloud[r].r;
+          p.g=pointCloud[r].g;
+          p.b=pointCloud[r].b;
+          p.life=500+Math.random()*300;
+          p.radius=10;
+          p.start=Date.now();
+          p.alpha=1;
+          p.dr=2+Math.random();
+          p.warble=event.detail.warble;
+          particles.push(p);
+          
+           console.log('Bell fired!', particles.length);
+        }
+
+      // Function to pad number with leading zeros
+      function padNumber(number) {
+          return ('000' + number).slice(-3);
+      }
+        
+      function goFullScreen()
+      {
+              // Request fullscreen for the canvas element
+        if (canvas.requestFullscreen) {
+            canvas.requestFullscreen();
+        } else if (canvas.webkitRequestFullscreen) {
+            canvas.webkitRequestFullscreen();
+        } else if (canvas.msRequestFullscreen) {
+            canvas.msRequestFullscreen();
+        }
+        
+        setTimeout(makeStartable,100)
+        
+      }
+      function makeStartable()
+      {
+        document.addEventListener('click', startAnimation);
+      }
+      document.getElementById("fullscreen").addEventListener('click', goFullScreen);
+  
+      // Add event listener to start animation on click
+      var start;
+      function startAnimation()
+      {
+        console.log("start animation");
+        start=Date.now();
+        animate();
+        
+        sereneBells("calm");
+        
+        document.removeEventListener('click', startAnimation);
+      }
+      </script>
+</body>
+</html>
