@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Image Fading</title>
+<style>
+    canvas {
+        border: 1px solid black;
+    }
+</style>
+</head>
+<body>
+<canvas id="canvas" width="1920" height="1080" style="width: 100%;"></canvas>
+<script>
+  const canvas = document.getElementById('canvas');
+  const ctx = canvas.getContext('2d');
+
+// List of image URLs
+const imageUrls = [
+    'fractal0001.jpg',
+    'fractal0002.jpg',
+    'fractal0003.jpg',
+    'fractal0004.jpg',
+    'fractal0005.jpg',
+    'fractal0006.jpg',
+    'fractal0007.jpg',
+    'fractal0008.jpg',
+    'fractal0009.jpg',
+    'fractal0010.jpg',
+    'fractal0011.jpg',
+    'fractal0012.jpg',
+    'fractal0013.jpg',
+    'fractal0014.jpg',
+    'fractal0015.jpg',
+    'fractal0016.jpg',
+    'fractal0017.jpg',
+    'fractal0018.jpg',
+    'fractal0019.jpg',
+    'fractal0020.jpg',
+    'fractal0021.jpg',
+
+    // Add more image URLs as needed
+];
+
+let currentImageIndex = 0;
+let direction = 1; // 1 for forward, -1 for backward
+let balls=[];
+for(var i=0;i<53;i++)
+{
+  var b={};
+  b.o={};
+  b.t=null;
+  b.a=0
+  b.da=0.001*Math.sin(i/9+27);
+  b.r=50;
+  b.o.x=Math.random()*canvas.width;
+  b.o.y=Math.random()*canvas.height;
+  b.o.dx=0.02*Math.sin(2*Math.PI*i/9+17);
+  b.o.dy=0.02*Math.cos(2*Math.PI*i/9+17);
+  b.d={};
+  b.d.x=Math.random()*canvas.width;
+  b.d.y=Math.random()*canvas.height;
+  b.d.dx=Math.sin(2*Math.PI*i/9+7);
+  b.d.dy=Math.cos(2*Math.PI*i/9+7);
+  balls.push(b);
+}
+function loadImage(url) {
+    return new Promise((resolve, reject) => {
+        const img = new Image();
+        img.onload = () => resolve(img);
+        img.onerror = reject;
+        img.src = url;
+    });
+}
+
+async function fadeBetweenImages(previousImage, nextImage, duration) {
+    const startTime = Date.now();
+    let alpha = 0;
+    
+    while (alpha <= 1) {
+        const elapsedTime = Date.now() - startTime;
+        alpha = elapsedTime / duration;
+        
+        // Draw the previous image
+        ctx.globalAlpha = 1;
+        ctx.drawImage(previousImage, 0, 0, canvas.width, canvas.height);
+        
+        // Draw the next image with the calculated alpha
+        ctx.globalAlpha = alpha;
+        ctx.drawImage(nextImage, 0, 0, canvas.width, canvas.height);
+        
+        await new Promise(resolve => requestAnimationFrame(resolve));
+    }
+}
+
+async function startFadeTransition() {
+    while (true) {
+        const previousImageIndex = currentImageIndex;
+        const previousImage = await loadImage(imageUrls[previousImageIndex]);
+        
+        // Update currentImageIndex based on direction
+        currentImageIndex += direction;
+        if (currentImageIndex >= imageUrls.length) {
+            currentImageIndex = imageUrls.length - 2;
+            direction = -1;
+        } else if (currentImageIndex < 0) {
+            currentImageIndex = 1;
+            direction = 1;
+        }
+        
+        const nextImage = await loadImage(imageUrls[currentImageIndex]);
+        
+        await fadeBetweenImages(previousImage, nextImage, 8000); // Fade between images for 8 seconds
+    }
+}
+
+// Create a new canvas for rotated animation
+const rotatedCanvas = document.createElement('canvas');
+const rotatedCtx = rotatedCanvas.getContext('2d');
+rotatedCanvas.width = canvas.width;
+rotatedCanvas.height = canvas.height;
+rotatedCanvas.style.width="100%";
+document.body.appendChild(rotatedCanvas);
+
+// Initial angle for rotation
+let angle = Math.PI / 180 * 5; // Rotate by 5 degrees
+
+// Function to draw the fading animation on the rotated canvas
+
+function drawRotatedCircle(ball) {
+  
+    var dx = ball.d.x; // destination
+    var dy = ball.d.y;
+    var ox = ball.o.x; // origin
+    var oy = ball.o.y;
+    var radius = ball.r; // Use ball.r for radius
+    var rotation = ball.a;
+
+    rotatedCtx.save();
+
+    // Calculate center coordinates
+    const centerX = dx;
+    const centerY = dy;
+
+    // Translate to center of the destination circle
+    rotatedCtx.translate(centerX, centerY);
+
+    // Rotate the context
+    rotatedCtx.rotate(rotation);
+
+    // Clip the drawing to the circle path
+    rotatedCtx.beginPath();
+    rotatedCtx.arc(0, 0, radius, 0, Math.PI * 2);
+    rotatedCtx.closePath();
+    rotatedCtx.clip();
+
+    rotatedCtx.globalAlpha=0.01;
+    // Draw the rotated image
+    rotatedCtx.drawImage(canvas, ox - canvas.width , oy - canvas.height , canvas.width, canvas.height);
+    
+    // Restore the context
+    rotatedCtx.restore();
+}
+
+var frame=0;
+// Call the drawRotatedCanvas function continuously
+// Call the drawRotatedCanvas function continuously
+function animate() {
+    frame++;
+    angle += 0.001;
+    for (var i = 0; i < balls.length; i++) {
+      var multiple=Math.floor(i%73);
+    var cx=canvas.width/2+Math.sin(multiple*15+frame/10000)*canvas.width*0.8;
+    var cy=canvas.height/2+Math.sin(multiple*16+frame/12000)*canvas.height*0.8;
+    var out=Math.sin(multiple*17.8+frame/54000)*canvas.width;
+        var b = balls[i]; // Declare b here
+        b.a += b.da; // rotation angle
+        b.r = 200 + Math.sin(multiple)*10 + Math.sin(multiple+frame / 1000) * 190;
+      
+        if(0)//i==0)
+        {
+          if(b.t==null)
+          {
+            // we need to give it a target.
+            b.t={};
+            b.t.x=Math.random()*canvas.width;
+            b.t.y=Math.random()*canvas.height;
+            console.log("target "+b.t);
+          }else
+          {
+            var dx=b.t.x-b.d.x;
+            var dy=b.t.y-b.d.y;
+            var len=Math.sqrt(dx*dx+dy*dy);
+            if(len<10)
+            {
+              b.t=null;
+            }
+            b.d.dx+=dx/len;
+            b.d.dy+=dy/len;
+          }
+        }
+        
+        // adjust to follow.
+        /*
+        nb=balls[(i+1)%balls.length];
+        var dx=nb.d.x-b.d.x;
+        var dy=nb.d.y-b.d.y;
+        var len=Math.sqrt(dx*dx+dy*dy);
+        b.d.dx+=dx/len;
+        b.d.dy+=dy/len;
+        var len=Math.sqrt(b.d.dx*b.d.dx+b.d.dy*b.d.dy);
+        if(len!=0)
+        {
+          b.d.dx=b.d.dx/len;
+          b.d.dy=b.d.dy/len;
+        }*/
+  
+      // Move origin
+      b.o.x += b.o.dx;
+      b.o.y += b.o.dy;
+
+    // Bounce origin horizontally
+    if (b.o.x > canvas.width - b.r) {
+        b.o.x = canvas.width - b.r;
+        b.o.dx = -Math.abs(b.o.dx); // Reverse direction
+    }
+    if (b.o.x < b.r) {
+        b.o.x = b.r;
+        b.o.dx = Math.abs(b.o.dx); // Reverse direction
+    }
+    
+    // Bounce origin vertically
+    if (b.o.y > canvas.height - b.r) {
+        b.o.y = canvas.height - b.r;
+        b.o.dy = -Math.abs(b.o.dy); // Reverse direction
+    }
+    if (b.o.y < b.r) {
+        b.o.y = b.r;
+        b.o.dy = Math.abs(b.o.dy); // Reverse direction
+    }
+
+    var rad=Math.PI*2*multiple/7;
+    var spin=Math.sin(multiple*7+frame/250)*frame/(Math.abs(out)+1000);
+    var old_x=b.d.x;
+    var old_y=b.d.y;
+       b.d.x = cx+out*Math.sin(rad+spin)+Math.sin(frame/(250+i))*1500; // move destination.
+        b.d.y= cy+out*Math.cos(rad+spin)+Math.cos(frame/(250+i))*1500;
+        var dx=b.d.x-old_x;
+        var dy=b.d.y-old_y;
+        var len=Math.sqrt(dx*dx+dy*dy);
+        b.d.x=old_x+0.003*dx/len;
+        b.d.y=old_y+0.003*dy/len;
+        drawRotatedCircle(b);
+    }
+    rotatedCtx.globalAlpha=0.5;
+    rotatedCtx.drawImage(rotatedCanvas,-1+2*Math.random(),-1+2*Math.random());
+    requestAnimationFrame(animate);
+    rotatedCtx.globalAlpha=1;
+}
+
+animate();
+
+startFadeTransition();
+
+</script>
+</body>
+</html>
