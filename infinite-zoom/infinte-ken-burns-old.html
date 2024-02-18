@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Ken Burns Effect</title>
+<style>
+    body, html {
+        margin: 0;
+        padding: 0;
+        height: 100%;
+        overflow: hidden;
+    }
+    #canvas_container {
+        width: 100%;
+        height: 100%;
+        position: relative;
+        overflow: hidden;
+    }
+    canvas {
+        position: absolute;
+        top: 0;
+        left: 0;
+        display: block;
+        width: 100%;
+        height: 100%;
+    }
+    #drop_zone {
+        width: 100%;
+        height: 100%;
+        background: rgba(255, 255, 255, 0.5);
+        position: absolute;
+        top: 0;
+        left: 0;
+        text-align: center;
+        line-height: 100vh;
+        font-size: 24px;
+        color: #333;
+    }
+</style>
+</head>
+<body>
+
+<div id="canvas_container">
+    <canvas id="canvas"></canvas>
+    <div id="drop_zone">Drop image here</div>
+</div>
+
+<script>
+    var canvas = document.getElementById('canvas');
+    var ctx = canvas.getContext('2d');
+    var currentImageIndex = 0;
+    var currentImagePath; // Initialize current image path
+
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+
+    document.addEventListener('dragover', handleDragOver, false);
+    document.addEventListener('drop', handleFileSelect, false);
+
+    function handleDragOver(event) {
+        event.stopPropagation();
+        event.preventDefault();
+        event.dataTransfer.dropEffect = 'copy';
+    }
+
+    function handleFileSelect(event) {
+        event.stopPropagation();
+        event.preventDefault();
+
+        var file = event.dataTransfer.files[0];
+        var reader = new FileReader();
+
+        reader.onload = function(e) {
+            var img = new Image();
+            img.onload = function() {
+                startKenBurnsEffect(img);
+            };
+            img.src = e.target.result;
+
+            // Set currentImagePath to the dropped image path
+            currentImagePath = file.name;
+
+            // Extract the number from the file name and set it as the current image index
+            currentImageIndex = parseInt(currentImagePath.match(/(\d+)(\.[^.]+)?$/)[1]);
+        };
+        reader.readAsDataURL(file);
+    }
+
+   function startKenBurnsEffect(frontImg) {
+    // Hide drop zone
+    document.getElementById('drop_zone').style.display = 'none';
+
+    // Load next image and start the Ken Burns effect with the current and next images
+    loadNextImage(currentImageIndex + 1, function(backImg) {
+        animateZoomIn(frontImg, backImg);
+    });
+}
+
+
+function loadNextImage(index, callback) {
+    var nextImagePath = getNextImagePath(index);
+    var nextImage = new Image();
+    nextImage.onload = function() {
+        console.log("Next image loaded: " + nextImagePath);
+        callback(nextImage); // Call the callback function with the loaded image
+    };
+    nextImage.src = nextImagePath;
+}
+    
+function getNextImagePath()
+{
+  console.log("currentImagePath: "+currentImagePath)
+    var nextImageNumber = currentImageIndex + 1; // Increment the current image index
+    console.log("nextImageNumber "+nextImageNumber)
+    var paddedNumber = padNumber(nextImageNumber, 4); // Pad the incremented number
+  var newImagePath=currentImagePath.replace(/\d+/, paddedNumber)
+      console.log("newImagePath: "+newImagePath)
+
+    return newImagePath; // Replace the number in the path with the padded number
+}
+
+
+
+    function padNumber(number, length) {
+        var str = '' + number;
+        while (str.length < length) {
+            str = '0' + str;
+        }
+        return str;
+    }
+
+function animateZoomIn(frontImage, backImage) {
+    var start = Date.now();
+    var duration = 4000; // 8 seconds
+    var zoomFactor = 1.20; // Define zoomFactor here
+    
+    // Start the zoom animation
+    zoomStep();
+
+    function zoomStep() {
+        var progress = (Date.now() - start) / duration;
+        if (progress >= 1) {
+            // Zoom animation complete
+            ctx.globalAlpha = 1;
+            ctx.drawImage(backImage, 0, 0, canvas.width, canvas.height);
+            ctx.globalAlpha = 1 - progress;
+            ctx.drawImage(frontImage, 0, 0, canvas.width, canvas.height);
+            
+            // Set up the next step
+            currentImageIndex++;
+            loadNextImage(currentImageIndex, function(nextImage) {
+                animateZoomIn(backImage,nextImage);
+            });
+        } else {
+            // Calculate current dimensions of the images
+            var currentWidthBack = canvas.width * Math.pow(zoomFactor, progress); // Front image starts at 100% and grows
+            var currentHeightBack = canvas.height * Math.pow(zoomFactor, progress);
+
+            var currentWidthFront = canvas.width * Math.pow(zoomFactor, (1 + progress)); // Back image starts at 104% and grows
+            var currentHeightFront = canvas.height * Math.pow(zoomFactor, (1 + progress));
+            
+            // Calculate the center position of the canvas
+            var centerX = canvas.width / 2;
+            var centerY = canvas.height / 2;
+
+            // Calculate the top-left corner position for drawing
+            var startXBack = centerX - (currentWidthBack / 2);
+            var startYBack = centerY - (currentHeightBack / 2);
+
+            var startXFront = centerX - (currentWidthFront / 2);
+            var startYFront = centerY - (currentHeightFront / 2);
+
+            // Draw the back image with globalAlpha and zoom from the center
+            ctx.globalAlpha = 1;
+            ctx.drawImage(backImage, 0, 0, backImage.width, backImage.height, startXBack, startYBack, currentWidthBack, currentHeightBack);
+
+            // Draw the front image with globalAlpha and zoom from the center
+            ctx.globalAlpha = 1 - progress;
+            ctx.drawImage(frontImage, 0, 0, frontImage.width, frontImage.height, startXFront, startYFront, currentWidthFront, currentHeightFront);
+
+            // Continue the zoom animation
+            requestAnimationFrame(zoomStep);
+        }
+    }
+}
+</script>
+
+</body>
+</html>

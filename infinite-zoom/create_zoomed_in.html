@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Image Zoom and Download</title>
+<style>
+    #drop_zone {
+        width: 300px;
+        height: 300px;
+        border: 2px dashed #ccc;
+        margin: 20px auto;
+        text-align: center;
+        line-height: 300px;
+    }
+    canvas {
+        display: block;
+        margin: 0 auto;
+        overflow: hidden;
+    }
+</style>
+</head>
+<body>
+
+<div id="drop_zone">Drop image here</div>
+<canvas id="canvas"></canvas>
+
+<script>
+    var dropZone = document.getElementById('drop_zone');
+    var canvas = document.getElementById('canvas');
+    var ctx = canvas.getContext('2d');
+
+    dropZone.addEventListener('dragover', handleDragOver, false);
+    dropZone.addEventListener('drop', handleFileSelect, false);
+
+    function handleDragOver(event) {
+        event.stopPropagation();
+        event.preventDefault();
+        event.dataTransfer.dropEffect = 'copy';
+    }
+
+    function handleFileSelect(event) {
+        event.stopPropagation();
+        event.preventDefault();
+
+        var files = event.dataTransfer.files;
+        if (files.length > 0) {
+            var file = files[0];
+            var reader = new FileReader();
+
+            reader.onload = function(e) {
+                var img = new Image();
+                img.onload = function() {
+                    canvas.width = img.width;
+                    canvas.height = img.height;
+                    var zoom = 1.20;
+                    var centerX = img.width / 2;
+                    var centerY = img.height / 2;
+                    var startX = centerX - (canvas.width / 2) / zoom;
+                    var startY = centerY - (canvas.height / 2) / zoom;
+                    ctx.drawImage(img, startX, startY, canvas.width / zoom, canvas.height / zoom, 0, 0, canvas.width, canvas.height);
+                    var newFileName = incrementFileName(file.name);
+                          newFileName = newFileName.replace(".png", ".jpg"); // Change the extension from .png to .jpg
+                        canvas.toBlob(function(blob) {
+                            var link = document.createElement('a');
+                            link.href = URL.createObjectURL(blob);
+                            link.download = newFileName;
+                            link.click();
+                        }, 'image/jpeg'); // Change the format to 'image/jpeg'
+                    };
+                img.src = e.target.result;
+            };
+            reader.readAsDataURL(file);
+        }
+    }
+
+    function incrementFileName(fileName) {
+        var match = fileName.match(/(.*?)(\d{4})(\..*)?$/);
+        if (match) {
+            var prefix = match[1] || '';
+            var number = parseInt(match[2]) + 1;
+            var extension = match[3] || '';
+            return prefix + number.toString().padStart(4, '0') + extension;
+        }
+        return fileName;
+    }
+</script>
+
+</body>
+</html>
