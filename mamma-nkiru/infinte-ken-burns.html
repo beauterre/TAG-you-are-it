@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Ken Burns Effect</title>
+<style>
+    body, html {
+        margin: 0;
+        padding: 0;
+        height: 100%;
+        overflow: hidden;
+    }
+    #canvas_container {
+        width: 100%;
+        height: 100%;
+        position: relative;
+        overflow: hidden;
+    }
+    canvas {
+        position: absolute;
+        top: 0;
+        left: 0;
+        display: block;
+        width: 100%;
+        height: 100%;
+    }
+</style>
+</head>
+<body>
+
+<div id="canvas_container">
+    <canvas id="canvas"></canvas>
+</div>
+
+<script>
+    var canvas = document.getElementById('canvas');
+    var ctx = canvas.getContext('2d');
+    var currentImageIndex = 0;
+    var totalImages = 120; // Number of initial images to load
+    var images = []; // Array to store preloaded images
+
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+
+        var imagesloaded=0;
+    // Load first four images
+    for (var i = 0; i < totalImages; i++) {
+        var img = document.createElement("img");
+        img.onload = function() {
+            imagesloaded++;
+            if (imagesloaded === 4) {
+              // start after 4 images loaded..
+                startKenBurnsEffect();
+            }
+        };
+        img.src = "mamma-" + padNumber(i + 1, 4) + ".jpg";
+        images.push(img);
+        document.body.appendChild(img); // Append image to the document body for preloading
+    }
+
+    function startKenBurnsEffect() {
+        loadNextImage(currentImageIndex + 1, function(backImg) {
+             animateZoomIn(images[currentImageIndex], images[currentImageIndex + 1]);
+        });
+    }
+
+    function loadNextImage(index, callback) {
+        var nextImage = images[index];
+        callback(nextImage); // Call the callback function with the loaded image
+    }
+
+    function padNumber(number, length) {
+        var str = '' + number;
+        while (str.length < length) {
+            str = '0' + str;
+        }
+        return str;
+    }
+
+    function animateZoomIn(frontImage, backImage) {
+        var start = Date.now();
+        var duration = 120000; // 8 seconds
+        var zoomFactor = 1.50; // Define zoomFactor here
+
+        // Start the zoom animation
+        zoomStep();
+
+     function zoomStep() {
+    var progress = (Date.now() - start) / duration;
+    if (progress >= 1) {
+        // Zoom animation complete
+        ctx.globalAlpha = 1;
+        ctx.drawImage(backImage, 0, 0, canvas.width, canvas.height);
+        ctx.globalAlpha = 0;
+        ctx.drawImage(frontImage, 0, 0, canvas.width, canvas.height);
+
+        // Set up the next step
+        currentImageIndex++;
+        if (currentImageIndex < images.length - 1) {
+            animateZoomIn(images[currentImageIndex], images[currentImageIndex + 1]);
+        }
+    } else {
+        // Calculate current dimensions of the images
+        var currentWidthBack = canvas.width * Math.pow(zoomFactor, progress); // Front image starts at 100% and grows
+        var currentHeightBack = canvas.height * Math.pow(zoomFactor, progress);
+
+        var currentWidthFront = canvas.width * Math.pow(zoomFactor, (1 + progress)); // Back image starts at 104% and grows
+        var currentHeightFront = canvas.height * Math.pow(zoomFactor, (1 + progress));
+
+        // Calculate the center position of the canvas
+        var centerX = canvas.width / 2;
+        var centerY = canvas.height / 2;
+
+        // Calculate the top-left corner position for drawing
+        var startXBack = centerX - (currentWidthBack / 2);
+        var startYBack = centerY - (currentHeightBack / 2);
+
+        var startXFront = centerX - (currentWidthFront / 2);
+        var startYFront = centerY - (currentHeightFront / 2);
+
+        // Draw the back image with globalAlpha and zoom from the center
+        ctx.globalAlpha = 1;
+        ctx.drawImage(backImage, 0, 0, backImage.width, backImage.height, startXBack, startYBack, currentWidthBack, currentHeightBack);
+
+        // Draw the front image with globalAlpha and zoom from the center
+        ctx.globalAlpha = 1 - progress;
+        ctx.drawImage(frontImage, 0, 0, frontImage.width, frontImage.height, startXFront, startYFront, currentWidthFront, currentHeightFront);
+
+        // Continue the zoom animation
+        requestAnimationFrame(zoomStep);
+    }
+}
+}
+</script>
+
+</body>
+</html>
