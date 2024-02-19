@@ -1,0 +1,50 @@
+<html>
+  <body>
+    
+  <script>
+// Create Audio Context
+var audioContext = new (window.AudioContext || window.webkitAudioContext)();
+
+// Function to create FM oscillator
+function createFMOscillator(carrierFreq, modulatorFreq, modulatorGain) {
+    var modulator = audioContext.createOscillator();
+    var carrier = audioContext.createOscillator();
+    var modulatorGainNode = audioContext.createGain();
+
+    modulator.frequency.value = modulatorFreq;
+    carrier.frequency.value = carrierFreq;
+
+    modulator.connect(modulatorGainNode);
+    modulatorGainNode.connect(carrier.frequency);
+
+    modulatorGainNode.gain.value = modulatorGain;
+
+    carrier.connect(audioContext.destination);
+
+    modulator.start();
+    carrier.start();
+
+    return {
+        modulator: modulator,
+        carrier: carrier,
+        modulatorGainNode: modulatorGainNode
+    };
+}
+
+// Create hoots
+var hoots = createFMOscillator(300, 5, 100); // Adjust frequencies and modulation depth to get desired hooting sound
+
+// Create cicadas
+var cicadas = createFMOscillator(1000, 10, 500); // Adjust frequencies and modulation depth to get desired cicada sound
+
+// Stop the oscillators after some time (e.g., 10 seconds)
+setTimeout(function() {
+    hoots.modulator.stop();
+    hoots.carrier.stop();
+    cicadas.modulator.stop();
+    cicadas.carrier.stop();
+}, 10000); // Adjust duration as needed
+
+</script>
+</body>
+</html>
