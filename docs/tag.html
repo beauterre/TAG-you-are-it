@@ -1,0 +1,748 @@
+<!doctype HTML>
+<html>
+<head>
+  
+    <style>
+        body {
+            font-family: sans-serif;
+        }
+        
+  @font-face {
+      font-family: font0;
+      font-style: normal;
+      font-weight: 400;
+      src: url("image_generation-master/generators/borrowed-detail/SeamlessPatternIcons.ttf") format("truetype");
+  }
+  @font-face {
+      font-family: font1;
+      font-style: normal;
+      font-weight: 400;
+      src: url("image_generation-master/generators/borrowed-detail/Sprykski.otf") format("opentype");
+  }
+  @font-face {
+      font-family: font2;
+      font-style: normal;
+      font-weight: 400;
+      src: url("image_generation-master/generators/borrowed-detail/Esoterica.ttf") format("truetype");
+  }
+
+    </style>
+        <script src="NoSleep.min.js"></script>
+
+    <title>TAG -you´re it -podcast</title>
+    <script src="serene-bells.js"></script>
+</head>
+<body>
+  <div id="intro">
+ <button id="start">start</button><br>
+ <input id="fullscreen" type="checkbox" checked/> Go Fullscreen.<br>
+ <h1>TAG -you´re it -podcast</h1>
+
+</div>
+<canvas id="canvas" width="1920" height="1080" style="height: 100%;"></canvas>
+<div id="lib">
+    <canvas id="faded" width="1920" height="1080" style="border: 1px solid #f00; height: 100%;"></canvas>
+    <canvas id="background" width="1920" height="1080" style="border: 1px solid #f00; height: 100%;"></canvas>
+  <img id="logo" src="TAG-you-re-it-square.jpg">
+  </div>
+    <script>
+    
+          var noSleep = new NoSleep();
+		  
+		    const faded = document.getElementById('faded');
+			const faded_ctx = faded.getContext('2d');
+		    const background = document.getElementById('background');
+			const background_ctx = background.getContext('2d');
+		  
+        var randomSeed=Math.floor(17+Math.random()*1500000);
+        var randomMult=Math.floor(166452+1664521*Math.random());
+        console.log("random mult= "+randomMult)
+        function pseudoRandom() {
+        randomSeed = (randomSeed * randomMult + 1013904223) % 0xFFFFFFF;
+        return (randomSeed) / 0xFFFFFFF;
+        }
+        var frame = pseudoRandom() * 1000;
+        var time=0;
+
+
+        var magic_numbers=[];
+        for(var i=0;i<100;i++) magic_numbers.push(pseudoRandom());
+
+        var canvas = document.getElementById('canvas');
+        var ctx = canvas.getContext('2d');
+        ctx.fillStyle="#000";
+        ctx.fillRect(0,0,canvas.width,canvas.height);
+
+                // Set text properties
+        ctx.fillStyle = 'white';
+        ctx.font = '40px Arial';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        
+        // Calculate the center position
+        var centerX = canvas.width / 2;
+        var centerY = canvas.height / 2;
+        
+        // Get current date and time
+        var formattedDate = getNextMeditationTime();
+        
+        // Text to be displayed
+        var text = "20 minutes Guided Meditation at " + formattedDate;
+        
+                      var logo=document.getElementById("logo");
+              logo.onload = function() {
+                console.log("logo loaded");
+                ctx.drawImage(logo, centerX - 400, centerY - 400, 800, 800);
+                
+              }
+
+
+        ctx.fillStyle="#fA8";
+        // Draw text in the center
+        ctx.fillText("Thankful, Attentive, Gentle", centerX, centerY+440);
+        // Draw text in the center
+        ctx.fillText(text, centerX, centerY+500);
+
+
+        // Function to generate a 1000-point cloud within the range of x and y values from -1 to 1
+        function generatePointCloud(numPoints,seed) {
+            var pointCloud = [];
+            var p = [];
+            for(var i=0;i<20;i++)
+            p.push({ a: Math.sin(seed-frame/3 *magic_numbers[0+i*2]), b: Math.sin(seed+frame/3 *magic_numbers[1+i*2]) });
+                
+            var minx = 1, maxx = -1, miny = 1, maxy = -1, minr = 1, maxr = -1, ming = 1, maxg = -1, minb = 1, maxb = -1;
+
+            var brush = { x: 0, y: 0, r: 0, g: 0, b: 0 };
+            //randomSeed=3;
+            for (var t = 0; t < numPoints + 1000; t++)
+            {
+
+                var i = Math.floor(pseudoRandom()*3)*5;
+                brush.x = brush.x * p[i    ].a + p[i    ].b;
+                brush.y = brush.y * p[i + 1].a + p[i + 1].b;
+                brush.r = brush.r * p[i + 2].a + p[i + 2].b;
+                brush.g = brush.g * p[i + 3].a + p[i + 3].b;
+                brush.b = brush.b * p[i + 4].a + p[i + 4].b;
+
+                minx = Math.min(minx, brush.x);
+                maxx = Math.max(maxx, brush.x);
+                miny = Math.min(miny, brush.y);
+                maxy = Math.max(maxy, brush.y);
+                minr = Math.min(minr, brush.r);
+                maxr = Math.max(maxr, brush.r);
+                ming = Math.min(ming, brush.g);
+                maxg = Math.max(maxg, brush.g);
+                minb = Math.min(minb, brush.b);
+                maxb = Math.max(maxb, brush.b);
+
+                if (t > 1000)
+                    pointCloud.push({ x: brush.x, y: brush.y, r: brush.r, g: brush.g, b: brush.b });
+            }
+
+            // Normalize points to the  right range [-1, 1], color 0-255
+            var rangeX = maxx - minx;
+            var rangeY = maxy - miny;
+            var rangeR = maxr - minr;
+            var rangeG = maxg - ming;
+            var rangeB = maxb - minb;
+            for (var i = 0; i < pointCloud.length; i++) {
+                pointCloud[i].x = ((pointCloud[i].x - minx) / rangeX) * 2 - 1;
+                pointCloud[i].y = ((pointCloud[i].y - miny) / rangeY) * 2 - 1;
+                pointCloud[i].r = Math.floor(((pointCloud[i].r - minr) / rangeR) * 256);
+                pointCloud[i].g = Math.floor(((pointCloud[i].g - ming) / rangeG) * 256);
+                pointCloud[i].b = Math.floor(((pointCloud[i].b - minb) / rangeB) * 256);
+            }
+
+            return pointCloud;
+        }
+
+        // Function to render the point cloud
+      // Function to render the point cloud
+    function renderPointCloud(pointCloud) {
+        ctx.globalAlpha = 0.85;
+    
+        for (var i = 0; i < pointCloud.length; i++) {
+            var point1 = pointCloud[i];
+            var nearestPoint = null;
+            var minDist = Infinity;
+    
+    
+    
+            for (var j = 0; j < pointCloud.length; j++) {
+                if (i !== j) {
+                    var point2 = pointCloud[j];
+                    var dx = point1.x - point2.x;
+                    var dy = point1.y - point2.y;
+
+                    var len = Math.sqrt(dx * dx + dy * dy);
+    
+                    if (len < minDist) {
+                        nearestPoint = point2;
+                        minDist = len;
+                    }
+                }
+            }
+    
+            if (nearestPoint) {
+                var x1 = (point1.x + 1) * canvas.width / 2;
+                var y1 = (point1.y + 1) * canvas.height / 2;
+                var x2 = (nearestPoint.x + 1) * canvas.width / 2;
+                var y2 = (nearestPoint.y + 1) * canvas.height / 2;
+
+                    ctx.fillStyle="rgb("+point1.r+","+point1.g+","+point1.b+")";
+                    ctx.fillRect(x1-1,y1-1,3,3);
+
+                      background_ctx.fillStyle="rgba("+point1.r+","+point1.g+","+point1.b+",0.05)";
+                      background_ctx.fillRect(x1,y1,1,1);
+                      
+
+                ctx.beginPath();
+                ctx.moveTo(x1, y1);
+                ctx.lineTo(x2, y2);
+                var r= (128 + 128 * Math.sin(frame * 51)+point1.r)/3;
+                var g= (128 + 128 * Math.sin(frame * 57)+point1.g)/3;
+                var b= (128 + 128 * Math.sin(frame * 53)+point1.b)/3;
+                ctx.strokeStyle = "rgb(" + r+ "," + g + "," + b + ")";
+                ctx.stroke();
+                if(Math.random()<0.2)
+                {
+                  background_ctx.beginPath();
+                  background_ctx.moveTo(x1, y1);
+                  background_ctx.lineTo(x2, y2);
+                  background_ctx.strokeStyle = "rgba(0,0,0,0.1)";
+                  background_ctx.stroke();
+                }
+              }
+        }
+    
+        ctx.globalAlpha = 1;
+    }
+
+// List of image URLs
+const imageUrls = [
+   'background0001.jpg',
+   'background0002.jpg',
+   'background0003.jpg',
+   'background0004.jpg'
+
+    // Add more image URLs as needed
+];
+
+
+async function fadeBetweenImages(previousImage, nextImage, duration) {
+    const startTime = Date.now();
+    let alpha = 0;
+    
+    while (alpha <= 1) {
+        const elapsedTime = Date.now() - startTime;
+        alpha = elapsedTime / duration;
+        
+        // Draw the previous image
+        faded_ctx.globalAlpha = 1;
+        faded_ctx.drawImage(previousImage, 0, 0, faded.width, faded.height);
+        
+        // Draw the next image with the calculated alpha
+        faded_ctx.globalAlpha = alpha;
+        faded_ctx.drawImage(nextImage, 0, 0, faded.width, faded.height);
+        
+        await new Promise(resolve => requestAnimationFrame(resolve));
+    }
+}
+let currentImageIndex = 0;
+let direction = 1; // 1 for forward, -1 for backward
+let balls=[];
+for(var i=0;i<9;i++)
+{
+  var b={};
+  b.o={};
+  b.t=null;
+  b.a=0
+  b.da=0.001*Math.sin(i/9+27);
+  b.r=50;
+  b.o.x=canvas.width/2;
+  b.o.y=canvas.height/2;
+  b.o.dx=Math.sin(2*Math.PI*i/9+17);
+  b.o.dy=Math.cos(2*Math.PI*i/9+17);
+  b.d={};
+  b.d.freq1=Math.floor(1+Math.random()*9);
+  b.d.freq2=Math.floor(1+Math.random()*9);
+  b.d.x=canvas.width/2;
+  b.d.y=canvas.height/2;
+  b.d.dx=Math.sin(2*Math.PI*i/9+7);
+  b.d.dy=Math.cos(2*Math.PI*i/9+7);
+  balls.push(b);
+}
+
+
+
+// Initial angle for rotation
+let angle = Math.PI / 180 * 5; // Rotate by 5 degrees
+
+function loadImage(url) {
+    return new Promise((resolve, reject) => {
+        const img = new Image();
+        img.onload = () => resolve(img);
+        img.onerror = reject;
+        img.src = url;
+    });
+}
+    prepare()
+	
+	function prepare()
+	{
+	startFadeTransition();
+		setTimeout(setInitialBackground,200);
+	}
+
+	function setInitialBackground()
+	{
+		background_ctx.drawImage(faded,0,0);
+	}
+
+async function startFadeTransition() {
+    while (true) {
+        const previousImageIndex = currentImageIndex;
+        const previousImage = await loadImage(imageUrls[previousImageIndex]);
+        
+        // Update currentImageIndex based on direction
+        currentImageIndex += direction;
+        if (currentImageIndex >= imageUrls.length) {
+            currentImageIndex = imageUrls.length - 2;
+            direction = -1;
+        } else if (currentImageIndex < 0) {
+            currentImageIndex = 1;
+            direction = 1;
+        }
+        
+        const nextImage = await loadImage(imageUrls[currentImageIndex]);
+        
+        await fadeBetweenImages(previousImage, nextImage, 8000); // Fade between images for 8 seconds
+    }
+}
+ 
+   
+   
+function drawRotatedCircle(ball,x,y) {
+    var dx = ball.d.x*0.3+0.7*x; // destination
+    var dy = ball.d.y*0.3+0.7*y;
+    var ox = ball.o.x; // origin
+    var oy = ball.o.y;
+    var radius = ball.r; // Use ball.r for radius
+    var rotation = ball.a;
+
+    background_ctx.save();
+
+    // Calculate center coordinates
+    const centerX = dx;
+    const centerY = dy;
+
+    // Translate to center of the destination circle
+    background_ctx.translate(centerX, centerY);
+
+    // Rotate the context
+  //  background_ctx.rotate(rotation);
+
+    // Clip the drawing to the circle path
+    background_ctx.beginPath();
+    background_ctx.arc(0, 0, radius, 0, Math.PI * 2);
+    background_ctx.closePath();
+    background_ctx.clip();
+
+    // Draw the rotated image
+    background_ctx.drawImage(faded, ox - faded.width , oy - faded.height , faded.width, faded.height);
+    
+    // Restore the context
+    background_ctx.restore();
+}
+
+   
+		function doFading()
+		{
+		// fading being done.
+		//console.log("fading being done");
+		
+		angle += 0.001;
+    for (var i = 0; i < balls.length; i++) {
+        var b = balls[i]; // Declare b here
+        b.a += b.da; // rotation angle
+        b.r = 150 + Math.sin(i)*10 + Math.sin(frame * 2) * 100;
+      
+        if(0)//i==0)
+        {
+          if(b.t==null)
+          {
+            // we need to give it a target.
+            b.t={};
+            b.t.x=Math.random()*canvas.width;
+            b.t.y=Math.random()*canvas.height;
+            console.log("target "+b.t);
+          }else
+          {
+            var dx=b.t.x-b.d.x;
+            var dy=b.t.y-b.d.y;
+            var len=Math.sqrt(dx*dx+dy*dy);
+            if(len<10)
+            {
+              b.t=null;
+            }
+            b.d.dx+=dx/len;
+            b.d.dy+=dy/len;
+          }
+        }
+        
+        // adjust to follow.
+        /*
+        nb=balls[(i+1)%balls.length];
+        var dx=nb.d.x-b.d.x;
+        var dy=nb.d.y-b.d.y;
+        var len=Math.sqrt(dx*dx+dy*dy);
+        b.d.dx+=dx/len;
+        b.d.dy+=dy/len;
+        var len=Math.sqrt(b.d.dx*b.d.dx+b.d.dy*b.d.dy);
+        if(len!=0)
+        {
+          b.d.dx=b.d.dx/len;
+          b.d.dy=b.d.dy/len;
+        }*/
+  
+      // Move origin
+      b.o.x += b.o.dx;
+      b.o.y += b.o.dy;
+
+    // Bounce origin horizontally
+    if (b.o.x > canvas.width - b.r) {
+        b.o.x = canvas.width - b.r;
+        b.o.dx = -Math.abs(b.o.dx); // Reverse direction
+    }
+    if (b.o.x < b.r) {
+        b.o.x = b.r;
+        b.o.dx = Math.abs(b.o.dx); // Reverse direction
+    }
+    
+    // Bounce origin vertically
+    if (b.o.y > canvas.height - b.r) {
+        b.o.y = canvas.height - b.r;
+        b.o.dy = -Math.abs(b.o.dy); // Reverse direction
+    }
+    if (b.o.y < b.r) {
+        b.o.y = b.r;
+        b.o.dy = Math.abs(b.o.dy); // Reverse direction
+    }
+
+       b.d.x += b.d.dx; // move destination.
+        b.d.y += b.d.dy;
+    // Bounce destination horizontally
+    if (b.d.x > canvas.width + 2*b.r) {
+        b.d.x = canvas.width + 2*b.r;
+        b.d.dx = -Math.abs(b.d.dx); // Reverse direction
+    }
+    if (b.d.x < -2*b.r) {
+        b.d.x = -2*b.r ;
+        b.d.dx = Math.abs(b.d.dx); // Reverse direction
+    }
+    
+    // Bounce destination vertically
+    if (b.d.y > canvas.height + 2*b.r) {
+        b.d.y = canvas.height + 2*b.r;
+        b.d.dy = -Math.abs(b.d.dy); // Reverse direction
+    }
+    if (b.d.y < -2*b.r) {
+        b.d.y = -2*b.r;
+        b.d.dy = Math.abs(b.d.dy); // Reverse direction
+    }
+		var x = canvas.width/2 +Math.sin(5*frame/b.d.freq1)*canvas.width/2+Math.cos(5*frame/b.d.freq2)*canvas.width/2;
+		var y = canvas.height/2 +Math.sin(5*frame/b.d.freq1)*canvas.height/2+Math.cos(5*frame/b.d.freq2)*canvas.height/2;
+        drawRotatedCircle(b,x,y);
+    }
+		}
+		
+
+      var pointCloud;
+    
+        // Animation loop
+        function animate() {
+		
+			doFading();
+		
+          var dt=Date.now()-start;
+          ctx.save();
+          ctx.globalCompositeOperation="screen";
+          ctx.fillStyle="rgba(3,0,15,0.2)";
+          ctx.fillRect(5,5,115,15);
+          ctx.globalCompositeOperation="multiply";
+          ctx.fillStyle="rgba(120,0,162,0.2)";
+          ctx.fillRect(10,10,100,5);
+          ctx.globalCompositeOperation="screen";
+          ctx.fillStyle="rgba(250,180,25,0.3)";
+          ctx.fillRect(10,10,100-100*dt/(20*60*1000)-5+Math.random()*5,5)
+          ctx.restore();
+          time++;
+          frame += 0.0005; // Adjust the frame increment as needed
+          var nr=200+190*Math.sin(5+frame/10);
+          //if(nr<150) nr=150;
+            pointCloud = generatePointCloud(nr,1);
+          
+            if(time%10==0)
+            {
+              // softcopy the background
+              ctx.save();
+              ctx.globalAlpha=0.1;
+              ctx.drawImage(background,0,0);
+              ctx.restore();
+            //  ctx.fillStyle="rgba(0,0,0,0.1)";
+            //  ctx.fillRect(0,0,1920,1080);
+            }
+            renderPointCloud(pointCloud);
+            
+            // now render Particles.
+            for(var i=particles.length-1;i>=0;i--)
+            {
+              var p=particles[i];
+//p.x=(pointCloud[p.sister].x+ 1) * canvas.width / 2;
+//              p.y=(pointCloud[p.sister].y + 1) * canvas.height / 2;
+  
+              var sec=(Date.now()/1000);
+              var variatie=p.dr*0.9;
+              if(variatie<2) variatie=2;
+              p.radius += p.dr + variatie* Math.sin( sec* p.warble *Math.PI*2 );
+              if(p.radius<10)p.radius=10;
+    
+              var dt=Date.now()-p.start;
+              p.dr*=0.995;
+              p.alpha-=0.001;
+              if(p.alpha<0.01)p.alpha=0.01;
+  
+              ctx.strokeStyle="rgba("+p.r+","+p.g+","+p.b+","+p.alpha+")";
+              ctx.beginPath();
+              ctx.arc(p.x,p.y,p.radius,0,Math.PI*2);
+              ctx.stroke();
+              if(p.warble<-0.9)
+              {
+                 var offset=Math.PI*2*Math.random();
+                 var size=Math.PI*(1.5+0.5+Math.random());
+                  background_ctx.strokeStyle="rgb("+p.r+","+p.g+","+p.b+")";
+                  background_ctx.beginPath();
+                  background_ctx.arc(p.x,p.y,p.radius,offset,size);
+                  background_ctx.stroke();
+                
+              }
+              
+              p.life--;
+              if(p.life<0) particles.splice(i,1);
+            }
+    
+          if(dt<20*60*1000)
+          {
+            if(time<250)
+            {
+                        // Set text properties
+              ctx.fillStyle = 'white';
+              ctx.font = '40px Arial';
+              ctx.textAlign = 'center';
+              ctx.textBaseline = 'middle';
+              
+              // Calculate the center position
+              var centerX = canvas.width / 2;
+              var centerY = canvas.height / 2;
+              
+              // Get current date and time
+              var currentDate = new Date();
+              currentDate.setHours(currentDate.getHours() + 1); // Adjusting for an hour later
+              
+			  formattedDate=getNextMeditationTime();
+
+					console.log(formattedDate);
+              
+                ctx.fillStyle="#ff9";
+
+              // Text to be displayed
+              var text = "20 minutes Guided Meditation at " + formattedDate;
+              
+              // Draw text in the center
+              var img=document.getElementById("logo");
+              if (img.complete) {
+                  ctx.drawImage(img, centerX-100, centerY-100,200,200,0,0,img.width,img.height);
+              }else{
+                console.log("logo not complete");
+              }
+              ctx.fillText(text, centerX, centerY+200);
+              var text = "Thankful, Attentive, Gentle..";
+
+              ctx.save();
+              ctx.shadowColor = 'rgba(0, 0, 0, 0.9)'; // Shadow color
+              ctx.shadowOffsetX = 5; // Horizontal offset of the shadow
+              ctx.shadowOffsetY = 5; // Vertical offset of the shadow
+              ctx.shadowBlur = 5; // Blur radius of the shadow
+              if(time>25)
+              {
+              // Draw text in the center
+              // Set up shadow properties
+              
+              ctx.fillText(text, centerX, centerY+20);
+              }
+            }
+          }else
+          {
+            // the end..
+
+            if(time%10==0)
+            {
+              ctx.fillStyle="rgba(0,0,0,0.1)";
+              ctx.fillRect(0,0,1920,1080);
+            }
+            
+                                    // Set text properties
+              ctx.fillStyle = 'white';
+              ctx.font = '40px Arial';
+              ctx.textAlign = 'center';
+              ctx.textBaseline = 'middle';
+              
+              // Calculate the center position
+              var centerX = canvas.width / 2;
+              var centerY = canvas.height / 2;
+              
+                ctx.fillStyle="#ff9";
+
+
+                ctx.drawImage(logo, centerX - 400, centerY - 400, 800, 800);
+  
+              // Text to be displayed
+              var text = "Thank you for joining in.. ";
+              
+              
+              // Draw text in the center
+              ctx.fillText(text, centerX, centerY+460);
+
+          }
+                        ctx.restore();
+
+            //console.log(time);
+              requestAnimationFrame(animate);
+        }
+       function getNextMeditationTime() {
+			var today = new Date(); // Today's date
+			
+			var days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday']; // Corrected array of days
+			
+			// Define the correct times
+			var correctTimes = ['00:00', '01:01', '02:02', '03:03', '04:04', '05:05', '06:06', '07:07', '08:08', '09:09', '10:10', '11:11', '12:12', '13:13', '14:14', '15:15', '16:16', '17:17', '18:18', '19:19', '20:20', '21:21', '22:22', '23:23'];
+
+			// Find the next correct time
+			var currentTime = today.getHours() * 100 + today.getMinutes(); // Current time in HHMM format
+			var nextCorrectTime = correctTimes.find(time => {
+				var [hours, minutes] = time.split(':').map(Number);
+				var correctTime = hours * 100 + minutes;
+				return correctTime > currentTime;
+			});
+
+			// If next correct time not found today, use the first correct time tomorrow
+			if (!nextCorrectTime) {
+				nextCorrectTime = correctTimes[0];
+				today.setDate(today.getDate() + 1); // Move to tomorrow
+			}
+
+			// Format the date
+			var formattedDate = days[today.getDay()] + ", " + today.toISOString().slice(0, 10) + " " + nextCorrectTime;
+
+			return formattedDate;
+		}
+
+        var particles=[];
+        document.addEventListener('bellFired', fireBell);
+        function fireBell(event)
+        {
+          // Handle the event here
+          var p={};
+          var r=Math.floor(Math.random()*pointCloud.length);
+          p.sister=r; // well that doesn´t work.. He´s at a differnt position at times.. Entwined??
+          p.x=(pointCloud[r].x+ 1) * canvas.width / 2;
+          p.y=(pointCloud[r].y + 1) * canvas.height / 2;
+          p.r=pointCloud[r].r;
+          p.g=pointCloud[r].g;
+          p.b=pointCloud[r].b;
+          p.life=500+Math.random()*300;
+          p.radius=10;
+          p.start=Date.now();
+          
+          p.alpha=1;
+          p.dr=2+Math.random();
+          p.warble=event.detail.warble;
+          particles.push(p);
+          
+         // doBackGround(p.x,p.y,p.r,p.g,p.b);
+
+          
+           //console.log('Bell fired!', particles.length);
+        }
+
+      // Function to pad number with leading zeros
+      function padNumber(number) {
+          return ('000' + number).slice(-3);
+      }
+        
+      function goFullScreen()
+      {
+        // checkbox..
+        if(document.getElementById("fullscreen").checked)
+        {
+                // Request fullscreen for the canvas element
+          if (canvas.requestFullscreen) {
+              canvas.requestFullscreen();
+          } else if (canvas.webkitRequestFullscreen) {
+              canvas.webkitRequestFullscreen();
+          } else if (canvas.msRequestFullscreen) {
+              canvas.msRequestFullscreen();
+          }
+        }else
+        {
+          // nothing in window visible but thingy, so we can take the contents of the windows for PC streaming.
+          document.getElementById("intro").style.display="none";
+          document.getElementById("lib").style.display="none";
+          document.body.style="margin: 0;padding: 0;";
+          document.getElementById("canvas").style.width="100%";
+        }
+        
+        setTimeout(makeStartable,100)
+        
+      }
+      function makeStartable()
+      {
+        document.addEventListener('click', startAnimation);
+      }
+      document.getElementById("start").addEventListener('click', goFullScreen);
+  
+      // Add event listener to start animation on click
+      var start;
+      function startAnimation()
+      {
+          noSleep.enable(); // keep the screen on!
+  
+        console.log("start animation");
+        start=Date.now();
+        animate();
+        for(var i=0;i<1000;i++)
+        {
+              var r=128+128*Math.sin(i/(17+6*Math.sin(89+frame/110)));
+              var g=128+128*Math.sin(i/(19+6*Math.sin(91+frame/150)));
+              var b=128+128*Math.sin(i/(23+6*Math.sin(93+frame/170)));
+
+          //doBackGround(Math.random()*canvas.width,Math.random()*canvas.height,r,g,b);
+        // we assume fonts loaded here..
+        }
+                var ctx = canvas.getContext('2d');
+        ctx.fillStyle="rgba(0,0,64,0.3)";
+        ctx.fillRect(0,0,canvas.width,canvas.height);
+
+
+        
+        sereneBells("calm");
+        
+        document.removeEventListener('click', startAnimation);
+      }
+      
+
+
+      </script>
+</body>
+</html>
