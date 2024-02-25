@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Noise Generators</title>
+<style>
+  .noise-generator {
+    border: 1px solid #ccc;
+    padding: 10px;
+    margin-bottom: 10px;
+  }
+</style>
+</head>
+<body>
+<div id="noiseGenerators">
+  <!-- Default noise generator -->
+  <div class="noise-generator">
+    <select class="noiseSource">
+      <option value="white">White Noise</option>
+      <option value="pink">Pink Noise</option>
+      <option value="brown">Brown Noise</option>
+    </select>
+    <input type="range" class="volume" min="0" max="1" step="0.1" value="0.5">
+    <input type="range" class="cutoffFrequency" min="10" max="20000" value="1000">
+    <label>Volume</label>
+    <label>Cutoff Frequency</label>
+    <button class="generateNoise">Generate Noise</button>
+    <button class="stopNoise">Stop Noise</button>
+    <button class="deleteNoise">Delete Noise</button>
+  </div>
+</div>
+<button id="addNoiseGenerator">+</button>
+
+<script>
+let audioContext = null;
+let noiseGenerators = [];
+
+// Function to initialize AudioContext
+function initializeAudioContext() {
+  if (!audioContext) {
+    audioContext = new AudioContext();
+  }
+}
+
+// Function to create a new noise generator
+function createNoiseGenerator() {
+  const noiseGenerator = document.createElement('div');
+  noiseGenerator.classList.add('noise-generator');
+
+  const noiseSourceSelect = document.createElement('select');
+  noiseSourceSelect.classList.add('noiseSource');
+  noiseSourceSelect.innerHTML = `
+    <option value="white">White Noise</option>
+    <option value="pink">Pink Noise</option>
+    <option value="brown">Brown Noise</option>
+  `;
+  noiseGenerator.appendChild(noiseSourceSelect);
+
+  const volumeSlider = document.createElement('input');
+  volumeSlider.classList.add('volume');
+  volumeSlider.type = 'range';
+  volumeSlider.min = 0;
+  volumeSlider.max = 1;
+  volumeSlider.step = 0.1;
+  volumeSlider.value = 0.5;
+  noiseGenerator.appendChild(volumeSlider);
+
+  const cutoffFrequencySlider = document.createElement('input');
+  cutoffFrequencySlider.classList.add('cutoffFrequency');
+  cutoffFrequencySlider.type = 'range';
+  cutoffFrequencySlider.min = 10;
+  cutoffFrequencySlider.max = 20000;
+  cutoffFrequencySlider.value = 1000;
+  noiseGenerator.appendChild(cutoffFrequencySlider);
+
+  const volumeLabel = document.createElement('label');
+  volumeLabel.textContent = 'Volume';
+  noiseGenerator.appendChild(volumeLabel);
+
+  const cutoffFrequencyLabel = document.createElement('label');
+  cutoffFrequencyLabel.textContent = 'Cutoff Frequency';
+  noiseGenerator.appendChild(cutoffFrequencyLabel);
+
+  const generateButton = document.createElement('button');
+  generateButton.classList.add('generateNoise');
+  generateButton.textContent = 'Generate Noise';
+  noiseGenerator.appendChild(generateButton);
+
+  const stopButton = document.createElement('button');
+  stopButton.classList.add('stopNoise');
+  stopButton.textContent = 'Stop Noise';
+  noiseGenerator.appendChild(stopButton);
+
+  const deleteButton = document.createElement('button');
+  deleteButton.classList.add('deleteNoise');
+  deleteButton.textContent = 'Delete Noise';
+  noiseGenerator.appendChild(deleteButton);
+
+  document.getElementById('noiseGenerators').appendChild(noiseGenerator);
+  noiseGenerators.push(noiseGenerator);
+}
+
+// Function to remove a noise generator
+function removeNoiseGenerator(index) {
+  const removedNoiseGenerator = noiseGenerators.splice(index, 1)[0];
+  removedNoiseGenerator.remove();
+}
+
+// Function to initialize all noise generators
+function initializeNoiseGenerators() {
+  document.querySelectorAll('.generateNoise').forEach(button => {
+    button.addEventListener('click', generateNoise);
+  });
+  document.querySelectorAll('.stopNoise').forEach(button => {
+    button.addEventListener('click', stopNoise);
+  });
+  document.querySelectorAll('.deleteNoise').forEach((button, index) => {
+    button.addEventListener('click', () => removeNoiseGenerator(index));
+  });
+}
+
+// Function to generate noise
+function generateNoise(event) {
+  const index = noiseGenerators.indexOf(event.target.parentElement);
+  const selectedNoise = noiseGenerators[index].querySelector('.noiseSource').value;
+  const volume = parseFloat(noiseGenerators[index].querySelector('.volume').value);
+  const cutoffFrequency = parseFloat(noiseGenerators[index].querySelector('.cutoffFrequency').value);
+
+  initializeAudioContext();
+
+  let noiseBuffer;
+  switch (selectedNoise) {
+    case 'white':
+      noiseBuffer = generateWhiteNoiseBuffer(audioContext);
+      break;
+    case 'pink':
+      noiseBuffer = generatePinkNoiseBuffer(audioContext);
+      break;
+    case 'brown':
+      noiseBuffer = generateBrownNoiseBuffer(audioContext);
+      break;
+    default:
+      console.error('Invalid noise source');
+  }
+
+  const source = audioContext.createBufferSource();
+  source.buffer = noiseBuffer;
+
+  const gainNode = audioContext.createGain();
+  gainNode.gain.value = volume;
+
+  const filter = audioContext.createBiquadFilter();
+  filter.type = 'lowpass';
+  filter.frequency.value = cutoffFrequency;
+
+  source.connect(gainNode);
+  gainNode.connect(filter);
+  filter.connect(audioContext.destination);
+
+  source.start(0);
+  noiseGenerators[index].dataset.playing = 'true';
+}
+
+// Function to stop noise
+function stopNoise(event) {
+  const index = noiseGenerators.indexOf(event.target.parentElement);
+  noiseGenerators[index].dataset.playing = 'false';
+}
+
+// Generate white noise buffer
+function generateWhiteNoiseBuffer(context) {
+  const duration = 5; // Duration of the noise in seconds
+  const sampleRate = context.sampleRate;
+  const numFrames = duration * sampleRate;
+  const buffer = context.createBuffer(1, numFrames, sampleRate);
+  const channelData = buffer.getChannelData(0);
+
+  for (let i = 0; i < numFrames; i++) {
+    channelData[i] = Math.random() * 2 - 1;
+  }
+
+  return buffer;
+}
+
+// Generate pink noise buffer
+function generatePinkNoiseBuffer(context) {
+  // Implementation of pink noise generation
+}
+
+// Generate brown noise buffer
+function generateBrownNoiseBuffer(context) {
+  // Implementation of brown noise generation
+}
+
+// Initialize event listeners
+document.getElementById('addNoiseGenerator').addEventListener('click', createNoiseGenerator);
+initializeNoiseGenerators();
+</script>
+</body>
+</html>
