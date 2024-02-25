@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Noise Generator</title>
+</head>
+<body>
+<select id="noiseSource">
+  <option value="white">White Noise</option>
+  <option value="pink">Pink Noise</option>
+  <option value="caramel">Caramel Noise</option>
+  <option value="honey">Honey Noise</option>
+  <option value="magenta">Magenta Noise</option>
+  <option value="brown">Brown Noise</option>
+</select>
+<input type="range" min="10" max="2000" value="1000" id="cutoffFrequency">
+<label for="cutoffFrequency">Low Pass Filter Cutoff Frequency</label>
+<button onclick="initializeAudioContextAndGenerateNoise()">Generate Noise</button>
+
+<script>
+let audioContext = null;
+let noiseBuffer = null;
+
+function initializeAudioContextAndGenerateNoise() {
+  // Create the AudioContext if it doesn't exist
+  if (!audioContext) {
+    audioContext = new AudioContext();
+  }
+
+  const selectedNoise = document.getElementById('noiseSource').value;
+  const cutoffFrequency = document.getElementById('cutoffFrequency').value;
+
+  // Generate noise buffer based on selected source
+  switch (selectedNoise) {
+    case 'white':
+      noiseBuffer = generateWhiteNoiseBuffer(audioContext);
+      break;
+    case 'pink':
+      noiseBuffer = generatePinkNoiseBuffer(audioContext);
+      break;
+    case 'caramel':
+      noiseBuffer = generateCaramelNoiseBuffer(audioContext);
+      break;
+    case 'honey':
+      noiseBuffer = generateHoneyNoiseBuffer(audioContext);
+      break;
+    case 'magenta':
+      noiseBuffer = generateMagentaNoiseBuffer(audioContext);
+      break;
+    case 'brown':
+      noiseBuffer = generateBrownNoiseBuffer(audioContext);
+      break;
+    default:
+      console.error('Invalid noise source');
+  }
+
+  // Create and play noise with adjustable low-pass filter
+  playNoiseWithFilter(cutoffFrequency);
+}
+
+// Generate white noise buffer
+function generateWhiteNoiseBuffer(context) {
+  const duration = 5; // Duration of the noise in seconds
+  const sampleRate = context.sampleRate;
+  const numFrames = duration * sampleRate;
+  const buffer = context.createBuffer(1, numFrames, sampleRate);
+  const channelData = buffer.getChannelData(0);
+
+  for (let i = 0; i < numFrames; i++) {
+    channelData[i] = Math.random() * 2 - 1;
+  }
+
+  return buffer;
+}
+
+// Generate pink noise buffer
+function generatePinkNoiseBuffer(context) {
+  const duration = 5; // Duration of the noise in seconds
+  const sampleRate = context.sampleRate;
+  const numFrames = duration * sampleRate;
+  const buffer = context.createBuffer(1, numFrames, sampleRate);
+  const channelData = buffer.getChannelData(0);
+
+  let b0 = 0;
+  let b1 = 0;
+  let b2 = 0;
+  let b3 = 0;
+  let b4 = 0;
+  let b5 = 0;
+  let b6 = 0;
+
+  for (let i = 0; i < numFrames; i++) {
+    const whiteNoise = Math.random() * 2 - 1;
+    b0 = 0.99886 * b0 + whiteNoise * 0.0555179;
+    b1 = 0.99332 * b1 + whiteNoise * 0.0750759;
+    b2 = 0.96900 * b2 + whiteNoise * 0.1538520;
+    b3 = 0.86650 * b3 + whiteNoise * 0.3104856;
+    b4 = 0.55000 * b4 + whiteNoise * 0.5329522;
+    b5 = -0.7616 * b5 - whiteNoise * 0.0168980;
+    channelData[i] = (b0 + b1 + b2 + b3 + b4 + b5 + b6 + whiteNoise * 0.5362) * 0.11;
+    b6 = whiteNoise * 0.115926;
+  }
+
+  return buffer;
+}
+
+// Generate brown noise buffer
+function generateBrownNoiseBuffer(context) {
+  const duration = 5; // Duration of the noise in seconds
+  const sampleRate = context.sampleRate;
+  const numFrames = duration * sampleRate;
+  const buffer = context.createBuffer(1, numFrames, sampleRate);
+  const channelData = buffer.getChannelData(0);
+
+  let lastSample = 0;
+  for (let i = 0; i < numFrames; i++) {
+    const whiteNoise = Math.random() * 2 - 1;
+    channelData[i] = (lastSample + (0.02 * whiteNoise)) / 1.02; // Filtered white noise
+    lastSample = channelData[i];
+  }
+
+  return buffer;
+}
+
+// Generate caramel noise buffer
+function generateCaramelNoiseBuffer(context) {
+  // Implementation of caramel noise generation omitted for brevity
+}
+
+// Generate honey noise buffer
+function generateHoneyNoiseBuffer(context) {
+  // Implementation of honey noise generation omitted for brevity
+}
+
+// Generate magenta noise buffer
+function generateMagentaNoiseBuffer(context) {
+  // Implementation of magenta noise generation omitted for brevity
+}
+
+
+
+// Create and play noise with adjustable low-pass filter
+function playNoiseWithFilter(cutoffFrequency) {
+  const source = audioContext.createBufferSource();
+  source.buffer = noiseBuffer;
+  source.loop = true;
+
+  const filter = audioContext.createBiquadFilter();
+  filter.type = 'lowpass';
+  filter.frequency.value = cutoffFrequency;
+
+  source.connect(filter);
+  filter.connect(audioContext.destination);
+
+  source.start(0);
+}
+</script>
+</body>
+</html>

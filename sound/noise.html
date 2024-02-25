@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <style>
+    .quarter{
+      width: 40px;
+      margin: 0;
+      padding: 0;
+    }
+    .full{
+      width: 160px;
+      display: inline-block;
+      margin: 0;
+      padding: 0;
+    }
+    .box{
+      width: 190px;
+      display: inline-block;
+      margin: 0;
+      padding: 3;
+      text-align: center;
+      border-radius: 15px;
+      background: #ddd;
+      box-shadow: inset -5px 5px 5px #fff, inset 5px -5px 5px #999;
+    }
+    .half{
+      margin: 0;
+      padding: 0;
+      width: 80px;
+    }
+  </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Noise Generator</title>
+</head>
+<body>
+  <div id="generators">
+    
+  <fieldset class="box">
+    <legend>
+      <button class="quarter" onclick="initializeAudioContextAndGenerateNoise()">PLAY</button>
+      <button class="quarter" onclick="stopNoise()">STOP</button>
+      </legend>
+    
+<select id="noiseSource" class="full" >
+  <option value="white">White Noise</option>
+  <option value="pink">Pink Noise</option>
+  <option value="caramel">Caramel Noise</option>
+  <option value="honey">Honey Noise</option>
+  <option value="magenta">Magenta Noise</option>
+  <option selected value="brown">Brown Noise</option>
+</select><br>
+<label for="cutoffFrequency">Low Pass Filter Cutoff Frequency</label><br>
+<input type="number" class="quarter" id="mincutoff" value="50">
+<input type="range" class="half" min="50" max="100" value="500" id="cutoffFrequency">
+<input type="number" class="quarter" id="maxcutoff" value="500"><br>
+<label for="volume">Volume</label><br>
+<input type="number" class="quarter" id="minvolume" value="25">
+<input type="range" class="half" min="15" max="30" value="35" id="volume">
+<input type="number" class="quarter" id="maxvolume" value="35"><br>
+<label for="waveCutoff" class="half">Wave cutoff</label>
+<input class="quarter" type="number" id="waveCutoff" value="97">(s)<br>
+<label for="waveVolume" class="half">Wave volume</label>
+<input class="quarter" type="number" id="waveVolume" value="29">(s)<br>
+
+  </fieldset>
+  </div>
+
+<script>
+let audioContext = null;
+let noiseBuffer = null;
+let filter = null;
+let source = null;
+let volumeNode = null;
+
+function initializeAudioContextAndGenerateNoise() {
+  // Create the AudioContext if it doesn't exist
+  if (!audioContext) {
+    audioContext = new AudioContext();
+  }
+
+  const selectedNoise = document.getElementById('noiseSource').value;
+  const cutoffFrequency = parseFloat(document.getElementById('cutoffFrequency').value);
+  const minCutoff = parseFloat(document.getElementById('mincutoff').value);
+  const maxCutoff = parseFloat(document.getElementById('maxcutoff').value);
+  const volume = parseFloat(document.getElementById('volume').value) / 100;
+  const minVolume = parseFloat(document.getElementById('minvolume').value) / 100;
+  const maxVolume = parseFloat(document.getElementById('maxvolume').value) / 100;
+  const waveCutoff = parseFloat(document.getElementById('waveCutoff').value);
+  const waveVolume = parseFloat(document.getElementById('waveVolume').value);
+
+  // Generate noise buffer based on selected source
+  switch (selectedNoise) {
+    case 'white':
+      noiseBuffer = generateWhiteNoiseBuffer(audioContext);
+      break;
+    case 'pink':
+      noiseBuffer = generatePinkNoiseBuffer(audioContext);
+      break;
+    case 'caramel':
+      noiseBuffer = generateCaramelNoiseBuffer(audioContext);
+      break;
+    case 'honey':
+      noiseBuffer = generateHoneyNoiseBuffer(audioContext);
+      break;
+    case 'magenta':
+      noiseBuffer = generateMagentaNoiseBuffer(audioContext);
+      break;
+    case 'brown':
+      noiseBuffer = generateBrownNoiseBuffer(audioContext);
+      break;
+    default:
+      console.error('Invalid noise source');
+  }
+
+  // Create and play noise with adjustable low-pass filter
+  createAndPlayNoise(cutoffFrequency, volume, minVolume, maxVolume, minCutoff, maxCutoff, waveCutoff, waveVolume);
+}
+
+// Generate white noise buffer
+function generateWhiteNoiseBuffer(context) {
+  const duration = 5; // Duration of the noise in seconds
+  const sampleRate = context.sampleRate;
+  const numFrames = duration * sampleRate;
+  const buffer = context.createBuffer(1, numFrames, sampleRate);
+  const channelData = buffer.getChannelData(0);
+
+  for (let i = 0; i < numFrames; i++) {
+    channelData[i] = Math.random() * 2 - 1;
+  }
+
+  return buffer;
+}
+
+// Generate pink noise buffer
+function generatePinkNoiseBuffer(context) {
+  const duration = 5; // Duration of the noise in seconds
+  const sampleRate = context.sampleRate;
+  const numFrames = duration * sampleRate;
+  const buffer = context.createBuffer(1, numFrames, sampleRate);
+  const channelData = buffer.getChannelData(0);
+
+  let b0 = 0;
+  let b1 = 0;
+  let b2 = 0;
+  let b3 = 0;
+  let b4 = 0;
+  let b5 = 0;
+  let b6 = 0;
+
+  for (let i = 0; i < numFrames; i++) {
+    const whiteNoise = Math.random() * 2 - 1;
+    b0 = 0.99886 * b0 + whiteNoise * 0.0555179;
+    b1 = 0.99332 * b1 + whiteNoise * 0.0750759;
+    b2 = 0.96900 * b2 + whiteNoise * 0.1538520;
+    b3 = 0.86650 * b3 + whiteNoise * 0.3104856;
+    b4 = 0.55000 * b4 + whiteNoise * 0.5329522;
+    b5 = -0.7616 * b5 - whiteNoise * 0.0168980;
+    channelData[i] = (b0 + b1 + b2 + b3 + b4 + b5 + b6 + whiteNoise * 0.5362) * 0.11;
+    b6 = whiteNoise * 0.115926;
+  }
+
+  return buffer;
+}
+
+// Generate brown noise buffer
+function generateBrownNoiseBuffer(context) {
+  const duration = 5; // Duration of the noise in seconds
+  const sampleRate = context.sampleRate;
+  const numFrames = duration * sampleRate;
+  const buffer = context.createBuffer(1, numFrames, sampleRate);
+  const channelData = buffer.getChannelData(0);
+
+  let lastSample = 0;
+  for (let i = 0; i < numFrames; i++) {
+    const whiteNoise = Math.random() * 2 - 1;
+    channelData[i] = (lastSample + (0.02 * whiteNoise)) / 1.02; // Filtered white noise
+    lastSample = channelData[i];
+  }
+
+  return buffer;
+}
+
+// Generate caramel noise buffer
+function generateCaramelNoiseBuffer(context) {
+  // Implementation of caramel noise generation omitted for brevity
+}
+
+// Generate honey noise buffer
+function generateHoneyNoiseBuffer(context) {
+  // Implementation of honey noise generation omitted for brevity
+}
+
+// Generate magenta noise buffer
+function generateMagentaNoiseBuffer(context) {
+  // Implementation of magenta noise generation omitted for brevity
+}
+
+// Create and play noise with adjustable low-pass filter
+function createAndPlayNoise(cutoffFrequency, volume, minVolume, maxVolume, minCutoff, maxCutoff, waveCutoff, waveVolume) {
+  if (filter) {
+    filter.disconnect();
+  }
+  if (source) {
+    source.disconnect();
+  }
+
+  source = audioContext.createBufferSource();
+  source.buffer = noiseBuffer;
+  source.loop = true;
+
+  filter = audioContext.createBiquadFilter();
+  filter.type = 'lowpass';
+  filter.frequency.value = cutoffFrequency;
+
+  volumeNode = audioContext.createGain();
+  volumeNode.gain.value = volume;
+
+  source.connect(filter);
+  filter.connect(volumeNode);
+  volumeNode.connect(audioContext.destination);
+
+  source.start(0);
+
+  // Animate cutoff frequency and volume
+  animateCutoffAndVolume(minCutoff, maxCutoff, minVolume, maxVolume, waveCutoff, waveVolume);
+}
+
+function animateCutoffAndVolume(minCutoff, maxCutoff, minVolume, maxVolume, waveCutoff, waveVolume) {
+  const currentTime = audioContext.currentTime;
+  const waveFrequency = 1 / waveCutoff;
+  const waveAmplitude = (maxCutoff - minCutoff) / 2;
+  const waveOffset = (maxCutoff + minCutoff) / 2;
+  const volumeFrequency = 1 / waveVolume;
+  const volumeAmplitude = (maxVolume - minVolume) / 2;
+  const volumeOffset = (maxVolume + minVolume) / 2;
+
+  setInterval(() => {
+    const elapsedTime = audioContext.currentTime - currentTime;
+    const cutoff = waveAmplitude * Math.sin(2 * Math.PI * waveFrequency * elapsedTime) + waveOffset;
+    const volume = volumeAmplitude * Math.sin(2 * Math.PI * volumeFrequency * elapsedTime) + volumeOffset;
+    filter.frequency.value = cutoff;
+    volumeNode.gain.value = volume;
+  }, 10);
+}
+
+function stopNoise() {
+  if (source) {
+    source.stop();
+  }
+}
+
+</script>
+</body>
+</html>
