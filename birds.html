@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Birdsong Emulation</title>
+</head>
+<body>
+<button onclick="initializeAudioContextAndGenerateBirds(2)">Generate Birds</button>
+
+<script>
+let audioContext = null;
+let convolverNode0_2s = null;
+let convolverNode0_7s = null;
+let convolverNode1_5s = null;
+
+ // Generate impulse buffer
+function  generateImpulseBuffer(context,length_in_seconds)
+  {
+    let length = context.sampleRate * length_in_seconds;
+    const impulseBuffer = context.createBuffer(2, length, context.sampleRate);
+    for (let channel = 0; channel < impulseBuffer.numberOfChannels; channel++) {
+      const channelData = impulseBuffer.getChannelData(channel);
+      for (let i = 0; i < length; i++) {
+        // Generate random noise between -1 and 1
+        channelData[i] = 200*(Math.random() * 2 - 1)/(i+200);
+      }
+    }
+    return impulseBuffer;
+  }
+  
+function initializeAudioContextAndGenerateBirds(numBirds) {
+  // Create the AudioContext if it doesn't exist
+  if (!audioContext) {
+    audioContext = new AudioContext();
+  }
+  // Create ConvolverNodes with different impulse responses
+  convolverNode0_2s = createConvolverNode(audioContext, generateImpulseBuffer(audioContext,0.2));
+  convolverNode0_7s = createConvolverNode(audioContext, generateImpulseBuffer(audioContext,.7));
+  convolverNode1_5s = createConvolverNode(audioContext, generateImpulseBuffer(audioContext,1.5));
+
+
+  for (let i = 0; i < numBirds; i++) {
+    generateBird();
+  }
+}
+// Create a single ConvolverNode with a given impulse response
+function createConvolverNode(context, impulseResponse) {
+  const convolverNode = context.createConvolver();
+  convolverNode.buffer = impulseResponse;
+  convolverNode.connect(context.destination);
+  return convolverNode;
+}
+
+// Define the bird object
+class Bird {
+  constructor(context) {
+    this.context = context;
+    var x = Math.random() * 200;
+    var y = Math.random() * 200;
+    var z = Math.random() * 200;
+    var len = Math.sqrt(x * x + y * y + z * z);
+    this.distance =  len;
+    this.pan = -1 + 2 * Math.random();
+    console.log("bird at distance:"+this.distance,"pan:"+this.pan);
+    
+    this.canvas = document.createElement("canvas");
+    document.body.appendChild(this.canvas);
+
+    this.oscillator = this.context.createOscillator();
+    this.gainNode = this.context.createGain();
+    this.panNode = this.context.createStereoPanner();
+
+
+    // Connect nodes
+    this.oscillator.connect(this.panNode);
+    this.panNode.connect(this.gainNode);
+    
+  // Determine the appropriate convolver node based on distance
+    if (this.distance < 20) {
+      this.gainNode.connect(convolverNode0_2s);
+    } else if (this.distance < 100) {
+      this.gainNode.connect(convolverNode0_7s);
+    } else {
+      this.gainNode.connect(convolverNode1_5s);
+    }
+     this.gainNode.connect(this.context.destination); // Connect to the destination directly (skipping convolver node)
+
+    
+    
+//    this.gainNode.connect(this.context.destination); // skip convolver node
+//    this.gainNode.connect(this.convolverNode); // Connect to convolver node
+//    this.convolverNode.connect(this.context.destination); // Connect convolver node to destination
+
+    // Set initial values
+    this.panNode.pan.value = this.pan; // Set initial panning
+
+
+
+    this.setupEvents();
+    this.renderCanvas();
+    this.repetitions = 20 + Math.floor(Math.random() * 80);
+    this.interval = Math.random() * 8 + 1; // Random interval between 1 and 2 seconds
+
+    // now schedule the events for playing.
+    const startTime = this.context.currentTime + Math.random() * 5;
+    const loop = startTime + (this.duration + this.interval);
+
+    this.gainNode.gain.setValueAtTime(0, startTime);
+    this.oscillator.start(startTime);
+    var ts = 0;
+    for (var r = 0; r < this.repetitions; r++) {
+      for (var e = 0; e < this.events.length; e++) {
+        // Schedule the bird's song
+        this.oscillator.frequency.linearRampToValueAtTime(this.events[e].pitch, startTime + this.events[e].ts + r * loop);
+        this.gainNode.gain.linearRampToValueAtTime(2*this.events[e].volume / this.distance, startTime + this.events[e].ts + r * loop);
+        ts = startTime + this.events[e].ts + r * loop;
+      }
+      // Schedule the silent interval
+      this.gainNode.gain.linearRampToValueAtTime(0, ts + 0.01);
+      this.gainNode.gain.linearRampToValueAtTime(0, startTime + this.events[0].ts + (r + 1) * loop - 0.01);
+    }
+    this.renderCanvas();
+  }
+
+  getRandomOscillatorType() {
+    const oscillatorTypes = ['triangle']; // 'sine',  'sawtooth',
+    const randomIndex = Math.floor(Math.random() * oscillatorTypes.length);
+    return oscillatorTypes[randomIndex];
+  }
+
+  setupEvents() {
+    this.events = [];
+    this.duration = Math.random() * 0.4 + 0.01; // Random duration between 1 and 2 seconds
+    if(Math.random()<0.1) this.duration += Math.random() * 0.5; // Random duration between 1 and 2 seconds
+    
+    var ts = 0;
+    var pitch = Math.random() * 6000 + 2000;
+    var warble = 0.01 + Math.random() * 0.02;
+    var twarble = 0.01 + Math.random() * 0.02;
+    var tpitch = Math.random() * 6000 + 2000;
+    var volume = 0;
+    var silent=false;
+    var tvolume = Math.random();
+    while (ts < this.duration) {
+      var e = {};
+      e.ts = ts
+      e.pitch = pitch * 0.9 + 0.1 * (Math.random() * 8000 + 1000); // Random pitch between 1000 Hz and 9000 Hz
+      pitch = e.pitch;
+      pitch = pitch * 0.9 + 0.1 * tpitch; // Random pitch goal
+      if (Math.random < 0.02) {
+        tpitch = Math.random() * 8000 + 1000;
+      }
+      if (Math.random < 0.005) {
+        tpitch = Math.random() * 19500 + 100;
+      }
+      e.volume = volume * 0.9 + 0.1 * Math.random();
+      volume = e.volume;
+      volume = volume * 0.9 + 0.1 * tvolume; // Random pitch volume
+      if (Math.random < 0.01) {
+        tvolume = Math.random();
+      }
+      if(Math.random()<0.1)
+      {
+        if(silent==false){
+          silent=true;
+          volume=0;
+          tvolume=0;
+          e.volume=0;
+        }else
+        {
+          silent=true;
+          tvolume=Math.random();
+          volume=Math.random();;
+          e.volume=volume;
+        }
+      }
+      warble = warble * 0.9 + 0.1 * (0.01 + Math.random() * 0.1);
+      warble = warble * 0.9 + 0.1 * twarble; // Random pitch volume
+      if (Math.random < 0.01) {
+        twarble = 0.01 + Math.random() * 0.1;
+      }
+      ts = ts + warble; // 1-5 ms to new event.
+      this.events.push(e);
+    }
+  }
+
+  // Create a function to render the canvas
+  renderCanvas() {
+    const ctx = this.canvas.getContext('2d');
+    ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+    this.canvas.width = this.duration * 150;
+    this.canvas.height = 20;
+    var r = Math.random() * 128;
+    var g = Math.random() * 128;
+    var b = Math.random() * 128;
+    ctx.fillStyle = "rgb(" + (r * 3 + 64) + "," + (g * 3 + 64) + "," + (b * 3 + 64) + ")";
+    ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
+
+    const numPoints = this.events.length;
+    const xIncrement = this.canvas.width / numPoints;
+
+    ctx.strokeStyle = "rgb(" + r + "," + g + "," + b + ")";
+    this.events.forEach((event, index) => {
+      const x = index * xIncrement;
+      const y = this.canvas.height - event.pitch / 9000 * this.canvas.height; // Adjust pitch to fit this.canvas height
+      let lineWidth = Math.round(event.volume * 5); // Adjust volume to line thickness scale
+      ctx.beginPath();
+      ctx.moveTo(x, y);
+      ctx.lineTo(x + xIncrement, y); // Draw a horizontal line
+      ctx.lineWidth = lineWidth;
+      ctx.stroke();
+      ctx.closePath();
+    });
+  }
+
+}
+
+
+// Create a function to generate a single bird
+function generateBird() {
+  const bird = new Bird(audioContext);
+}
+</script>
+</body>
+</html>
