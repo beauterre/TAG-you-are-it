@@ -1,0 +1,301 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        body {
+            margin: 0;
+            overflow: hidden;
+        }
+        canvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            display: block;
+        }
+    </style>
+    <title>Calming cloud System</title>
+</head>
+<body>
+    <canvas id="cloudCanvas" width="1920" height="1080"></canvas>
+    <canvas id="overlay" width="1920" height="1080"></canvas>
+    <script>
+        const overlay = document.getElementById("overlay");
+        const canvas = document.getElementById("cloudCanvas");
+        const ctx = canvas.getContext("2d");
+        const overlay_ctx = overlay.getContext("2d");
+
+            ctx.fillStyle = "rgba(0, 0, 0, 1)";
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+          var cx=canvas.width/2;
+          var cy=canvas.height/2;
+
+            const gradient = overlay_ctx.createRadialGradient(cx, cy, 0, cx, cy, 750);
+            gradient.addColorStop(0,   "rgba(0,0,0,1)");
+            gradient.addColorStop(0.3,   "rgba(0,0,0,0.5)");
+            gradient.addColorStop(1, "rgba(0,0,0,0)");
+            overlay_ctx.fillStyle=gradient;;
+            overlay_ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+
+        let clouds = [];
+        let stars = [];
+        let frame=Date.now();
+
+        function Cloud() {
+            let time=frame+clouds.length;
+            
+            let x=cx+Math.sin(time/93)*canvas.width*0.3  + Math.cos(time/80) * canvas.width/4 +(Math.random()-0.5)*Math.sin(time/90)*20;
+            let y=cy+Math.cos(time/62)*canvas.height*0.3+ Math.sin(time/77) * canvas.height/4 +(Math.random()-0.5)*Math.sin(time/70)*20;
+            if(1)
+            {
+              x=cx*0.99+0.01*x;
+              y=cy*0.99+0.01*y;
+            
+            }
+            if(Math.random()<0.5)
+              x=(canvas.width-x);
+            if(Math.random()<0.5)
+              y=(canvas.height-y);
+            this.x = x;
+            this.y = y;
+            this.dx = 0;
+            this.dy = 0;
+            this.r = Math.sin(x / (Math.sin(time / 7000) * 35 + 135) + y / (Math.cos(time / 1200) * 37 + 25) + Math.cos(time / 16040)*150)*256+128*Math.sin(time/2001)+92*Math.sin(time/3009);
+            this.g = Math.cos(x / (Math.sin(time / 7101) * 36 + 145) + y / (Math.cos(time / 1203) * 38 + 25) + Math.sin(time / 17030)*170)*256+128*Math.sin(time/2007)+92*Math.sin(time/3007);
+            this.b = Math.sin(x / (Math.sin(time / 7103) * 37 + 155) + y / (Math.sin(time / 1204) * 39 + 25) + Math.sin(time / 18020)*160)*256+128*Math.cos(time/1009)+92*Math.sin(time/3003);
+            if(clouds.length%15==0)
+            {
+              this.r = Math.floor(this.r+15);
+              this.g = Math.floor(this.g+15);
+              this.b = Math.floor(this.b+15);
+            }else
+            {
+              this.r = Math.floor(this.r-1055);
+              this.g = Math.floor(this.g-1055);
+              this.b = Math.floor(this.b-1055);
+            
+            }
+            if(this.r<0) this.r=0;
+            if(this.r>255) this.r=255;
+            if(this.g<0) this.g=0;
+            if(this.g>255) this.g=255;
+            if(this.b<0) this.b=0;
+            if(this.b>255) this.b=255;
+            this.life = 50+50*Math.random();
+            this.totallife = this.life;
+        }
+        function Star() {
+            let time=frame+clouds.length;
+            
+            this.x=cx-10+20*Math.random();
+            this.y=cy-10+20*Math.random();
+            this.dx=0;
+            this.dy=0;
+            this.r = Math.sin(this.x / (Math.sin(time / 7000) * 35 + 135) + this.y / (Math.cos(time / 1200) * 37 + 25) + Math.cos(time / 16040)*150)*256+128*Math.sin(time/2001)+92*Math.sin(time/3009);
+            this.g = Math.cos(this.x / (Math.sin(time / 7101) * 36 + 145) + this.y / (Math.cos(time / 1203) * 38 + 25) + Math.sin(time / 17030)*170)*256+128*Math.sin(time/2007)+92*Math.sin(time/3007);
+            this.b = Math.sin(this.x / (Math.sin(time / 7103) * 37 + 155) + this.y / (Math.sin(time / 1204) * 39 + 25) + Math.sin(time / 18020)*160)*256+128*Math.cos(time/1009)+92*Math.sin(time/3003);
+            if(clouds.length%5==0)
+            {
+              this.r = Math.floor(this.r+228);
+              this.g = Math.floor(this.g+228);
+              this.b = Math.floor(this.b+228);
+            }else
+            {
+              this.r = Math.floor(this.r-428);
+              this.g = Math.floor(this.g-428);
+              this.b = Math.floor(this.b-428);
+            
+            }
+            if(this.r<0) this.r=0;
+            if(this.r>255) this.r=255;
+            if(this.g<0) this.g=0;
+            if(this.g>255) this.g=255;
+            if(this.b<0) this.b=0;
+            if(this.b>255) this.b=255;
+            this.a=Math.random()*0.3;
+        }
+
+        function animate()
+        {
+          
+            frame++;
+            for(let i=0;i<1;i++)    createcloud();
+            for(let i=0;i<1;i++)    createStar();
+            
+
+            for(var i=stars.length-1;i>=0;i--)
+            {
+                let star=stars[i];
+               let time=frame+i;
+                let dx=star.x-cx;
+                let dy=star.y-cy;
+                star.dx += dx/750;
+                star.dy += dy/750;
+                star.x += star.dx+(Math.sin((time+star.x)/30)+Math.sin((time+star.y)/35))/(2+1*Math.sin(time/20));
+                
+                
+                star.y += star.dy+(Math.sin((time+star.x)/33)+Math.sin((time+star.y)/34))/(2+1*Math.sin(time/21));
+                ctx.fillStyle=`rgba(${star.r}, ${star.g}, ${star.b}, ${star.a})`
+                ctx.fillRect(star.x,star.y,1,1);
+                
+                var in_bounds=true;
+                if(star.x>canvas.width)in_bounds=false;
+                if(star.x<0)in_bounds=false;
+                if(star.y>canvas.height)in_bounds=false;
+                if(star.y<0)in_bounds=false;
+  
+                if (in_bounds==false) {
+                    stars.splice(stars.indexOf(star), 1);
+                }
+
+
+            }
+
+            for(var i=clouds.length-1;i>=0;i--)
+            {
+                let cloud=clouds[i];
+                let dx=cloud.x-cx;
+                let dy=cloud.y-cy;
+                if(i%2)
+                {
+                  cloud.dx += Math.sin(cloud.x / (Math.sin(frame / 70) * 375 + 135) + Math.sin(frame / 93)*150);
+                  cloud.dy += Math.sin(cloud.y / (Math.cos(frame / 87) * 375 + 137) + Math.sin(frame / 53)*150);
+//                  cloud.dx += dx/150;
+//                  cloud.dy += dy/150;
+                }else
+                {
+                  cloud.dx += Math.sin(cloud.x / (Math.sin(frame / 70) * 373 + 13) + Math.sin(frame / 93)*35);
+                  cloud.dy += Math.sin(cloud.y / (Math.cos(frame / 87) * 373 + 17) + Math.sin(frame / 53)*35);
+                }
+
+                let speed = Math.sqrt(cloud.dx * cloud.dx + cloud.dy * cloud.dy);
+
+/*                let centerx=cloud.x-canvas.width/2;
+                let centery=cloud.y-canvas.height/2;
+                centerx*=1.01;
+                centery*=1.01;
+                centerx+=canvas.width/2;
+                centery+=canvas.height/2;*/
+                
+                // stop the churning..
+                cloud.dx*=0.95;
+                cloud.dy*=0.95;
+                
+                cloud.x += cloud.dx;
+                cloud.y += cloud.dy;
+                cloud.x = cloud.x*0.9+0.1*cx;
+                cloud.y = cloud.y*0.9+0.1*cy;
+
+                let radius = 250 * Math.cos(-Math.PI+ Math.PI * 2 * cloud.life / cloud.totallife);
+                radius=radius/500;
+                radius=radius*radius;
+                radius=radius*100;
+                if(radius<1) radius=1;
+
+                if (speed > radius/10) {
+                    cloud.dx *= 0.8;
+                    cloud.dy *= 0.8;
+                }
+                if (speed < radius/100) {
+                    cloud.dx *= 1.15;
+                    cloud.dy *= 1.15;
+                }
+                
+                let goalr=Math.sin(cloud.x / (Math.sin(cloud.x / 200) * 35 + 135) + cloud.y / (Math.cos(frame / 2020) * 47 + 75) + Math.cos(cloud.y / 440)*170)*256+128*Math.sin(frame/220)+92*Math.sin(frame/390);
+                let goalg=Math.sin(cloud.x / (Math.sin(cloud.x / 210) * 36 + 125) + cloud.y / (Math.cos(frame / 3020) * 57 + 65) + Math.cos(cloud.y / 540)*160)*256+128*Math.sin(frame/210)+92*Math.sin(frame/370);
+                let goalb=Math.sin(cloud.x / (Math.sin(cloud.x / 220) * 37 + 115) + cloud.y / (Math.cos(frame / 1020) * 37 + 25) + Math.cos(cloud.y / 440)*150)*256+128*Math.sin(frame/230)+92*Math.sin(frame/360);
+                if(goalr>255)goalr=255;
+                if(goalr<0)goalr=0;
+                if(goalb>255)goalb=255;
+                if(goalb<0)goalb=0;
+                if(goalg>255)goalg=255;
+                if(goalg<0)goalg=0;
+                cloud.r = cloud.r *0.999+ 0.001*goalr;
+                cloud.g = cloud.g *0.999+ 0.001*goalg;
+                cloud.b = cloud.b *0.999+ 0.001*goalb;
+                cloud.r = Math.floor(cloud.r);
+                cloud.g = Math.floor(cloud.g);
+                cloud.b = Math.floor(cloud.b);
+
+
+
+                let alpha=0.01+(1+Math.sin(frame/300))/7*(radius/250);
+                // Create a radial gradient
+                const gradient = ctx.createRadialGradient(cloud.x, cloud.y, 0, cloud.x, cloud.y, radius);
+                gradient.addColorStop(0, `rgba(${cloud.r}, ${cloud.g}, ${cloud.b}, ${alpha})`);
+                gradient.addColorStop(0.5, `rgba(${cloud.r}, ${cloud.g}, ${cloud.b}, ${alpha*0.2})`);
+                gradient.addColorStop(1, `rgba(${cloud.r}, ${cloud.g}, ${cloud.b}, 0)`);
+
+                // Set the gradient as the fill style
+                ctx.fillStyle = gradient;
+
+                // Draw the radial gradient
+                ctx.fillRect(cloud.x - radius, cloud.y - radius, 2 * radius, 2 * radius);
+                
+/*                ctx.fillStyle = `rgba(${cloud.r}, ${cloud.g}, ${cloud.b}, ${alpha})`;
+                ctx.beginPath();
+                ctx.arc(cloud.x, cloud.y, radius, 0, Math.PI * 2);
+                ctx.fill();*/
+
+                cloud.life--;
+
+                if (cloud.life <= 0) {
+                    clouds.splice(clouds.indexOf(cloud), 1);
+                }
+            }
+            // get some noise in..
+            for(var i=0;i<3;i++)
+            {
+              ctx.fillStyle="rgba(0,0,0,0.2)";
+              var x=Math.random()*canvas.width;
+              var y=Math.random()*canvas.height;
+              var dx=x-cx;
+              var dy=y-cy;
+              var len=Math.sqrt(dx*dx+dy*dy);
+              var size=len/5;
+              var alpha=3/size;
+              if(size<1)size=1;
+              if(size>60)size=60;
+              let gradient = ctx.createRadialGradient(x, y, 0, x,y, size);
+                gradient.addColorStop(0, "rgba(0,0,0,"+alpha+")");
+                gradient.addColorStop(1, "rgba(0,0,0,0.0)");
+                // Set the gradient as the fill style
+                ctx.fillStyle = gradient;
+              ctx.fillRect(0,0,canvas.width,canvas.height);
+
+              ctx.fillStyle="rgba(255,255,255,0.5)";
+              var x=Math.random()*canvas.width;
+              var y=Math.random()*canvas.height;
+              var dx=x-cx;
+              var dy=y-cy;
+              var len=Math.sqrt(dx*dx+dy*dy);
+              var size=len/150;
+              if(size<1)size=1;
+              if(size>10)size=10;
+              ctx.fillRect(x,y,size,size);
+            }
+            ctx.globalAlpha=0.9;
+            var speed=0.007;
+            var comp=1-speed*2;
+            var x_stagger=Math.random()-0.5;
+            var y_stagger=Math.random()-0.5;
+            ctx.drawImage(canvas,x_stagger+canvas.width*speed,y_stagger+canvas.height*speed,canvas.width*comp,canvas.height*comp ,0,0,canvas.width, canvas.height);
+            ctx.globalAlpha=1;
+            requestAnimationFrame(animate);
+        }
+
+        function createcloud() {
+            const cloud = new Cloud();
+            clouds.push(cloud);
+        }
+        function createStar() {
+            const star = new Star();
+            stars.push(star);
+        }
+        animate();
+        
+    </script>
+</body>
+</html>
